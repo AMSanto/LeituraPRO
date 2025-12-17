@@ -32,6 +32,13 @@ export interface AssessmentCriteria {
     inference: boolean;   // Inferências simples
     titleRelation: boolean;// Relação com o título
   };
+  math?: {
+    numberSense: boolean;    // Senso numérico / Contagem
+    operations: boolean;      // Operações básicas (+, -, etc)
+    problemSolving: boolean;  // Resolução de problemas
+    logicReasoning: boolean;  // Raciocínio lógico
+    geometry: boolean;        // Formas e Geometria
+  };
 }
 
 export interface Assessment {
@@ -42,6 +49,7 @@ export interface Assessment {
   wpm: number; // Words Per Minute
   accuracy: number; // Percentage
   comprehension: number; // 1-10 scale
+  mathScore?: number; // 1-10 scale (Novo)
   criteria?: AssessmentCriteria; // Novos critérios detalhados
   notes: string;
   aiFeedback?: string;

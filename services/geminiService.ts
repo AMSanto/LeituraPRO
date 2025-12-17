@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Assessment, Student } from "../types";
 
@@ -7,7 +6,7 @@ import { Assessment, Student } from "../types";
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
- * Generates a pedagogical analysis of a student based on their assessment history.
+ * Generates a pedagogical analysis of a student based on their assessment history (Reading + Math).
  */
 export const generateStudentAnalysis = async (student: Student & { grade?: string }, assessments: Assessment[]): Promise<string> => {
   // Get last 3 assessments
@@ -19,17 +18,17 @@ export const generateStudentAnalysis = async (student: Student & { grade?: strin
       if (a.criteria) {
         const c = a.criteria;
         const fluency = Object.entries(c.fluency).filter(([,v]) => v).length;
-        const decoding = Object.entries(c.decoding).filter(([,v]) => v).length;
         const comp = Object.entries(c.comprehension).filter(([,v]) => v).length;
-        details = ` | Critérios Atendidos - Fluência: ${fluency}/4, Decodificação: ${decoding}/3, Compreensão: ${comp}/5`;
+        const math = c.math ? Object.entries(c.math).filter(([,v]) => v).length : 0;
+        details = ` | Fluência: ${fluency}/4, Compreensão: ${comp}/5, Matemática: ${math}/5. Notas: L:${a.comprehension}, M:${a.mathScore || 'N/A'}`;
       }
-      return `Data: ${a.date}, WPM: ${a.wpm}, Precisão: ${a.accuracy}%, Comp: ${a.comprehension}/10${details}. Obs: ${a.notes}`;
+      return `Data: ${a.date}, WPM: ${a.wpm}, Precisão: ${a.accuracy}%${details}. Obs: ${a.notes}`;
     })
     .join('\n');
 
   const prompt = `
-    Atue como um especialista pedagógico em alfabetização e letramento.
-    Analise o progresso do aluno abaixo e forneça um relatório curto e construtivo.
+    Atue como um especialista pedagógico multidisciplinar em alfabetização e educação básica.
+    Analise o progresso do aluno abaixo considerando tanto a LEITURA quanto a MATEMÁTICA.
 
     Aluno: ${student.name} 
     Série: ${student.grade || 'N/A'}
@@ -38,14 +37,12 @@ export const generateStudentAnalysis = async (student: Student & { grade?: strin
     Histórico recente de avaliações:
     ${recentHistory}
     
-    Critérios avaliados incluem: Ritmo, Entonação, Decodificação sem soletrar, Inferência e Ideia Principal.
-
-    Estrutura da resposta (em Markdown):
-    1. **Pontos Fortes**: O que o aluno já domina.
-    2. **Áreas de Atenção**: Onde há dificuldades (ex: ritmo, inferência, decodificação).
-    3. **Sugestões Práticas**: 3 atividades específicas para pais ou professores aplicarem.
+    Forneça um relatório curto e construtivo em Markdown:
+    1. **Desempenho em Leitura**: Síntese da fluência e compreensão.
+    2. **Desenvolvimento Matemático**: Análise das competências numéricas e raciocínio.
+    3. **Sugestões de Intervenção**: 3 atividades práticas que integrem as duas áreas ou foquem na maior dificuldade.
     
-    Seja encorajador e específico.
+    Seja específico e encorajador.
   `;
 
   try {

@@ -3,7 +3,7 @@ import { Assessment, Student } from "../types";
 
 // Always use the environment variable directly for API key initialization.
 // The key is assumed to be provided and valid in the execution context.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || 'FAKE_API_KEY_FOR_DEVELOPMENT' });
 
 /**
  * Generates a pedagogical analysis of a student based on their assessment history (Reading + Math).
@@ -20,29 +20,29 @@ export const generateStudentAnalysis = async (student: Student & { grade?: strin
         const fluency = Object.entries(c.fluency).filter(([,v]) => v).length;
         const comp = Object.entries(c.comprehension).filter(([,v]) => v).length;
         const math = c.math ? Object.entries(c.math).filter(([,v]) => v).length : 0;
-        details = ` | Fluência: ${fluency}/4, Compreensão: ${comp}/5, Matemática: ${math}/5. Notas: L:${a.comprehension}, M:${a.mathScore || 'N/A'}`;
+        details = ` | FluÃªncia: ${fluency}/4, CompreensÃ£o: ${comp}/5, MatemÃ¡tica: ${math}/5. Notas: L:${a.comprehension}, M:${a.mathScore || 'N/A'}`;
       }
-      return `Data: ${a.date}, WPM: ${a.wpm}, Precisão: ${a.accuracy}%${details}. Obs: ${a.notes}`;
+      return `Data: ${a.date}, WPM: ${a.wpm}, PrecisÃ£o: ${a.accuracy}%${details}. Obs: ${a.notes}`;
     })
     .join('\n');
 
   const prompt = `
-    Atue como um especialista pedagógico multidisciplinar em alfabetização e educação básica.
-    Analise o progresso do aluno abaixo considerando tanto a LEITURA quanto a MATEMÁTICA.
+    Atue como um especialista pedagÃ³gico multidisciplinar em alfabetizaÃ§Ã£o e educaÃ§Ã£o bÃ¡sica.
+    Analise o progresso do aluno abaixo considerando tanto a LEITURA quanto a MATEMÃTICA.
 
     Aluno: ${student.name} 
-    Série: ${student.grade || 'N/A'}
-    Nível de Leitura Atual: ${student.readingLevel}
+    SÃ©rie: ${student.grade || 'N/A'}
+    NÃ­vel de Leitura Atual: ${student.readingLevel}
     
-    Histórico recente de avaliações:
+    HistÃ³rico recente de avaliaÃ§Ãµes:
     ${recentHistory}
     
-    Forneça um relatório curto e construtivo em Markdown:
-    1. **Desempenho em Leitura**: Síntese da fluência e compreensão.
-    2. **Desenvolvimento Matemático**: Análise das competências numéricas e raciocínio.
-    3. **Sugestões de Intervenção**: 3 atividades práticas que integrem as duas áreas ou foquem na maior dificuldade.
+    ForneÃ§a um relatÃ³rio curto e construtivo em Markdown:
+    1. **Desempenho em Leitura**: SÃ­ntese da fluÃªncia e compreensÃ£o.
+    2. **Desenvolvimento MatemÃ¡tico**: AnÃ¡lise das competÃªncias numÃ©ricas e raciocÃ­nio.
+    3. **SugestÃµes de IntervenÃ§Ã£o**: 3 atividades prÃ¡ticas que integrem as duas Ã¡reas ou foquem na maior dificuldade.
     
-    Seja específico e encorajador.
+    Seja especÃ­fico e encorajador.
   `;
 
   try {
@@ -53,9 +53,9 @@ export const generateStudentAnalysis = async (student: Student & { grade?: strin
         thinkingConfig: { thinkingBudget: 0 } 
       }
     });
-    return response.text || "Não foi possível gerar a análise no momento.";
+    return response.text || "NÃ£o foi possÃ­vel gerar a anÃ¡lise no momento.";
   } catch (error) {
-    console.error("Erro ao gerar análise:", error);
+    console.error("Erro ao gerar anÃ¡lise:", error);
     return "Erro ao conectar com a IA.";
   }
 };
@@ -64,9 +64,9 @@ export const generateStudentAnalysis = async (student: Student & { grade?: strin
  * Generates reading material and comprehension questions based on level and topic.
  */
 export const generateReadingMaterial = async (level: string, topic: string): Promise<{ title: string; content: string; questions: string[] }> => {
-  const prompt = `Gere um material de leitura pedagógico para o nível escolar: ${level}.
-    O tema é: ${topic}.
-    O material deve conter um título criativo, um texto adequado para a série e 3 perguntas de compreensão.`;
+  const prompt = `Gere um material de leitura pedagÃ³gico para o nÃ­vel escolar: ${level}.
+    O tema Ã©: ${topic}.
+    O material deve conter um tÃ­tulo criativo, um texto adequado para a sÃ©rie e 3 perguntas de compreensÃ£o.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -79,7 +79,7 @@ export const generateReadingMaterial = async (level: string, topic: string): Pro
           properties: {
             title: { 
               type: Type.STRING,
-              description: 'Título do texto de leitura.'
+              description: 'TÃ­tulo do texto de leitura.'
             },
             content: { 
               type: Type.STRING,
@@ -88,7 +88,7 @@ export const generateReadingMaterial = async (level: string, topic: string): Pro
             questions: {
               type: Type.ARRAY,
               items: { type: Type.STRING },
-              description: 'Três perguntas de compreensão sobre o texto.'
+              description: 'TrÃªs perguntas de compreensÃ£o sobre o texto.'
             }
           },
           required: ["title", "content", "questions"],

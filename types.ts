@@ -1,60 +1,48 @@
 export interface SchoolClass {
   id: string;
-  name: string;
-  gradeLevel: string;
-  year: number;
+  name: string; // Ex: "Turma A", "2º Ano B"
+  gradeLevel: string; // Ex: "2º Ano Fundamental"
+  year: number; // Ex: 2024
 }
 
 export interface Student {
   id: string;
   name: string;
-  classId: string;
-  readingLevel: string;
+  classId: string; // Link to SchoolClass
+  readingLevel: string; // Ex: "Iniciante", "Intermediário", "Avançado"
   avatarUrl: string;
 }
 
-export type Subject = 'Reading' | 'Math';
-
 export interface AssessmentCriteria {
-  // Reading Specific
-  fluency?: {
-    rhythm: boolean;
-    pauses: boolean;
-    intonation: boolean;
-    security: boolean;
+  fluency: {
+    rhythm: boolean;      // Lê com ritmo adequado
+    pauses: boolean;      // Faz pausas corretas
+    intonation: boolean;  // Apresenta entonação
+    security: boolean;    // Demonstra segurança
   };
-  decoding?: {
-    recognition: boolean;
-    noOmissions: boolean;
-    complexWords: boolean;
+  decoding: {
+    recognition: boolean; // Reconhecer palavras sem soletrar
+    noOmissions: boolean; // Evitar trocas, omissão ou acréscimo
+    complexWords: boolean;// Lê corretamente palavras longas
   };
-  // Math Specific
-  math?: {
-    logicalReasoning: boolean; // Raciocínio Lógico
-    problemSolving: boolean;   // Resolver Problemas
-    modeling: boolean;         // Modelar Situações
-    criticalThinking: boolean; // Pensamento Crítico
-    cooperation: boolean;      // Cooperação
-  };
-  comprehension?: {
-    mainIdea: boolean;
-    explicit: boolean;
-    implicit: boolean;
-    inference: boolean;
-    titleRelation: boolean;
+  comprehension: {
+    mainIdea: boolean;    // Ideia principal do texto
+    explicit: boolean;    // Informações explícitas
+    implicit: boolean;    // Informações implícitas
+    inference: boolean;   // Inferências simples
+    titleRelation: boolean;// Relação com o título
   };
 }
 
 export interface Assessment {
   id: string;
   studentId: string;
-  subject: Subject;
   date: string;
-  textTitle: string; // Ou "Tópico da Aula" para Matemática
-  wpm?: number; // Opcional para Math
-  accuracy: number; // Precisão na leitura ou no cálculo
-  comprehension: number; 
-  criteria?: AssessmentCriteria;
+  textTitle: string;
+  wpm: number; // Words Per Minute
+  accuracy: number; // Percentage
+  comprehension: number; // 1-10 scale
+  criteria?: AssessmentCriteria; // Novos critérios detalhados
   notes: string;
   aiFeedback?: string;
 }
@@ -71,6 +59,5 @@ export enum ViewState {
   CLASSES = 'CLASSES',
   STUDENTS = 'STUDENTS',
   STUDENT_HISTORY = 'STUDENT_HISTORY',
-  ASSESSMENT = 'ASSESSMENT',
-  GENERATOR = 'GENERATOR'
+  ASSESSMENT = 'ASSESSMENT'
 }

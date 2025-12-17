@@ -3,7 +3,6 @@ import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { StudentList } from './components/StudentList';
 import { AssessmentForm } from './components/AssessmentForm';
-import { TextGenerator } from './components/TextGenerator';
 import { ClassList } from './components/ClassList';
 import { StudentHistory } from './components/StudentHistory';
 import { ViewState, Student, Assessment, SchoolClass } from './types';
@@ -37,6 +36,7 @@ const App: React.FC = () => {
   const handleDeleteClass = (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir esta turma? Os alunos permanecerão no sistema, mas ficarão sem turma associada.')) {
       setClasses(classes.filter(c => c.id !== id));
+      // Optional: Set students of this class to have empty classId
       setStudents(students.map(s => s.classId === id ? { ...s, classId: '' } : s));
     }
   };
@@ -72,15 +72,19 @@ const App: React.FC = () => {
       id: Math.random().toString(36).substr(2, 9)
     };
     setAssessments([...assessments, assessment]);
-    setCurrentView(ViewState.DASHBOARD); 
+    setCurrentView(ViewState.DASHBOARD); // Return to dashboard after save
   };
 
   const handleNavigate = (view: ViewState) => {
     setCurrentView(view);
     setMobileMenuOpen(false);
-    // Reset selections when navigating via sidebar
-    setSelectedClassId('');
-    setSelectedStudentId('');
+    // Clear filters when navigating via sidebar main menu
+    if (view !== ViewState.STUDENTS) {
+      setSelectedClassId('');
+    }
+    if (view !== ViewState.STUDENT_HISTORY) {
+      setSelectedStudentId('');
+    }
   };
 
   const renderContent = () => {
@@ -98,10 +102,6 @@ const App: React.FC = () => {
             onViewStudents={(classId) => {
               setSelectedClassId(classId);
               setCurrentView(ViewState.STUDENTS);
-            }}
-            onStartAssessment={(classId) => {
-              setSelectedClassId(classId);
-              setCurrentView(ViewState.ASSESSMENT);
             }}
           />
         );
@@ -133,16 +133,10 @@ const App: React.FC = () => {
           <AssessmentForm 
             students={students} 
             classes={classes}
-            initialClassId={selectedClassId}
             onSave={handleAddAssessment} 
-            onCancel={() => {
-              setSelectedClassId('');
-              setCurrentView(ViewState.DASHBOARD);
-            }} 
+            onCancel={() => setCurrentView(ViewState.DASHBOARD)} 
           />
         );
-      case ViewState.GENERATOR:
-        return <TextGenerator />;
       default:
         return <Dashboard students={students} assessments={assessments} classes={classes} />;
     }
@@ -150,15 +144,19 @@ const App: React.FC = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50 font-sans text-gray-900">
+      {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" onClick={() => setMobileMenuOpen(false)} />
       )}
 
+      {/* Sidebar (Responsive) */}
       <div className={`fixed inset-y-0 left-0 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition duration-200 ease-in-out z-50 md:z-auto`}>
         <Sidebar currentView={currentView} onNavigate={handleNavigate} />
       </div>
 
+      {/* Main Content */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
+        {/* Mobile Header */}
         <header className="bg-white border-b border-gray-200 p-4 flex items-center md:hidden shrink-0 shadow-sm">
           <button onClick={() => setMobileMenuOpen(true)} className="p-2 mr-2 text-gray-600">
             <Menu className="w-6 h-6" />
@@ -167,10 +165,11 @@ const App: React.FC = () => {
             <div className="bg-gradient-to-br from-violet-600 to-fuchsia-600 p-1.5 rounded-lg shadow-sm">
               <GraduationCap className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-lg text-gray-800 tracking-tight">EduPro AI</span>
+            <span className="font-bold text-lg text-gray-800 tracking-tight">LeituraPro</span>
           </div>
         </header>
 
+        {/* Scrollable Content Area */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-7xl mx-auto">
             {renderContent()}

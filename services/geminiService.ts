@@ -1,82 +1,113 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { Assessment, Student } from "../types";
 
-const apiKey = process.env.API_KEY || '';
-const ai = new GoogleGenAI({ apiKey });
+// Always use the environment variable directly for API key initialization.
+// The key is assumed to be provided and valid in the execution context.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const checkApiKey = () => {
-  if (!apiKey) {
-    throw new Error("API Key não encontrada.");
-  }
-};
-
+/**
+ * Generates a pedagogical analysis of a student based on their assessment history.
+ */
 export const generateStudentAnalysis = async (student: Student & { grade?: string }, assessments: Assessment[]): Promise<string> => {
-  checkApiKey();
-
+  // Get last 3 assessments
   const recentHistory = assessments
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5)
+    .slice(0, 3)
     .map(a => {
-      const subjectLabel = a.subject === 'Math' ? 'Matemática' : 'Leitura';
-      return `[${subjectLabel}] Data: ${a.date}, Topico: ${a.textTitle}, Precisão/Nota: ${a.accuracy}%, Comp: ${a.comprehension}/10. Obs: ${a.notes}`;
+      let details = '';
+      if (a.criteria) {
+        const c = a.criteria;
+        const fluency = Object.entries(c.fluency).filter(([,v]) => v).length;
+        const decoding = Object.entries(c.decoding).filter(([,v]) => v).length;
+        const comp = Object.entries(c.comprehension).filter(([,v]) => v).length;
+        details = ` | Critérios Atendidos - Fluência: ${fluency}/4, Decodificação: ${decoding}/3, Compreensão: ${comp}/5`;
+      }
+      return `Data: ${a.date}, WPM: ${a.wpm}, Precisão: ${a.accuracy}%, Comp: ${a.comprehension}/10${details}. Obs: ${a.notes}`;
     })
     .join('\n');
 
   const prompt = `
-    Atue como um especialista pedagógico multidisciplinar.
-    Analise o progresso do aluno abaixo em Leitura e/ou Matemática.
+    Atue como um especialista pedagógico em alfabetização e letramento.
+    Analise o progresso do aluno abaixo e forneça um relatório curto e construtivo.
 
     Aluno: ${student.name} 
     Série: ${student.grade || 'N/A'}
+    Nível de Leitura Atual: ${student.readingLevel}
     
-    Histórico recente:
+    Histórico recente de avaliações:
     ${recentHistory}
     
-    Para Matemática, avalie: Raciocínio Lógico, Resolução de Problemas, Modelagem e Pensamento Crítico.
-    Para Leitura, avalie: Fluência, Decodificação e Compreensão.
+    Critérios avaliados incluem: Ritmo, Entonação, Decodificação sem soletrar, Inferência e Ideia Principal.
 
     Estrutura da resposta (em Markdown):
-    1. **Perfil de Aprendizagem**: Resumo do momento atual do aluno.
-    2. **Pontos Fortes**: Conquistas em qualquer uma das áreas.
-    3. **Plano de Intervenção**: 3 atividades práticas para reforçar áreas de dificuldade (seja lógica ou alfabetização).
-    4. **Socioemocional**: Comente sobre a cooperação se houver dados.
+    1. **Pontos Fortes**: O que o aluno já domina.
+    2. **Áreas de Atenção**: Onde há dificuldades (ex: ritmo, inferência, decodificação).
+    3. **Sugestões Práticas**: 3 atividades específicas para pais ou professores aplicarem.
+    
+    Seja encorajador e específico.
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
-      config: { thinkingConfig: { thinkingBudget: 0 } }
+      config: {
+        thinkingConfig: { thinkingBudget: 0 } 
+      }
     });
-    return response.text || "Análise indisponível.";
+    return response.text || "Não foi possível gerar a análise no momento.";
   } catch (error) {
-    return "Erro ao conectar com a IA educacional.";
+    console.error("Erro ao gerar análise:", error);
+    return "Erro ao conectar com a IA.";
   }
 };
 
+/**
+ * Generates reading material and comprehension questions based on level and topic.
+ */
 export const generateReadingMaterial = async (level: string, topic: string): Promise<{ title: string; content: string; questions: string[] }> => {
-  checkApiKey();
-  const prompt = `Crie um material didático para o nível ${level} sobre ${topic}. Se for um tema de matemática, crie um pequeno desafio contextualizado. Se for leitura, um conto curto. Retorne JSON.`;
+  const prompt = `Gere um material de leitura pedagógico para o nível escolar: ${level}.
+    O tema é: ${topic}.
+    O material deve conter um título criativo, um texto adequado para a série e 3 perguntas de compreensão.`;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            title: { type: Type.STRING },
-            content: { type: Type.STRING },
-            questions: { type: Type.ARRAY, items: { type: Type.STRING } }
+            title: { 
+              type: Type.STRING,
+              description: 'Título do texto de leitura.'
+            },
+            content: { 
+              type: Type.STRING,
+              description: 'O texto completo para o aluno ler.'
+            },
+            questions: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: 'Três perguntas de compreensão sobre o texto.'
+            }
           },
-          required: ["title", "content", "questions"]
+          required: ["title", "content", "questions"],
+          propertyOrdering: ["title", "content", "questions"]
         }
       }
     });
-    return JSON.parse(response.text);
+
+    const jsonStr = response.text?.trim();
+    if (!jsonStr) {
+      throw new Error("Resposta da IA vazia.");
+    }
+    
+    return JSON.parse(jsonStr);
   } catch (error) {
+    console.error("Erro ao gerar material de leitura:", error);
     throw error;
   }
 };

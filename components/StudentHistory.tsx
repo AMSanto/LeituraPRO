@@ -34,10 +34,10 @@ export const StudentHistory: React.FC<StudentHistoryProps> = ({ student, assessm
             <img 
               src={student.avatarUrl} 
               alt={student.name} 
-              className="w-24 h-24 rounded-full object-cover border-4 border-violet-50 mb-4" 
+              className="w-24 h-24 rounded-full object-cover border-4 border-primary-50 mb-4" 
             />
             <h2 className="text-lg font-bold text-gray-900">{student.name}</h2>
-            <div className="mt-2 inline-flex px-3 py-1 bg-violet-50 text-violet-700 rounded-full text-sm font-medium">
+            <div className="mt-2 inline-flex px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-sm font-medium">
               {student.readingLevel}
             </div>
             <div className="mt-6 w-full space-y-4">
@@ -78,7 +78,7 @@ export const StudentHistory: React.FC<StudentHistoryProps> = ({ student, assessm
               <div key={assessment.id} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b border-gray-100 pb-4">
                    <div className="flex items-center gap-3">
-                     <div className="bg-violet-50 p-2.5 rounded-lg text-violet-600">
+                     <div className="bg-primary-50 p-2.5 rounded-lg text-primary-700">
                        <FileText className="w-5 h-5" />
                      </div>
                      <div>
@@ -94,7 +94,7 @@ export const StudentHistory: React.FC<StudentHistoryProps> = ({ student, assessm
                      <div className="text-center px-4 py-2 bg-gray-50 rounded-lg border border-gray-100">
                        <div className="text-[10px] text-gray-400 font-bold uppercase">Leitura</div>
                        <div className="font-bold text-gray-900 text-lg flex items-center gap-1 justify-center">
-                         <Clock className="w-4 h-4 text-violet-400" />
+                         <Clock className="w-4 h-4 text-primary-500" />
                          {assessment.wpm}
                        </div>
                      </div>
@@ -128,11 +128,11 @@ export const StudentHistory: React.FC<StudentHistoryProps> = ({ student, assessm
                            {assessment.criteria.fluency.security && <span className="bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0.5 rounded">Segurança</span>}
                          </div>
                        </div>
-                       <div className="bg-purple-50/40 p-3 rounded-lg border border-purple-100">
-                         <h4 className="text-[10px] font-bold text-purple-700 uppercase mb-2">Compreensão</h4>
+                       <div className="bg-primary-50/40 p-3 rounded-lg border border-primary-100">
+                         <h4 className="text-[10px] font-bold text-primary-700 uppercase mb-2">Compreensão</h4>
                          <div className="flex flex-wrap gap-1.5">
-                           {assessment.criteria.comprehension.mainIdea && <span className="bg-purple-100 text-purple-700 text-[10px] px-1.5 py-0.5 rounded">Ideia Princ.</span>}
-                           {assessment.criteria.comprehension.inference && <span className="bg-purple-100 text-purple-700 text-[10px] px-1.5 py-0.5 rounded">Inferência</span>}
+                           {assessment.criteria.comprehension.mainIdea && <span className="bg-primary-100 text-primary-700 text-[10px] px-1.5 py-0.5 rounded">Ideia Princ.</span>}
+                           {assessment.criteria.comprehension.inference && <span className="bg-primary-100 text-primary-700 text-[10px] px-1.5 py-0.5 rounded">Inferência</span>}
                          </div>
                        </div>
                        <div className="bg-orange-50/40 p-3 rounded-lg border border-orange-100">

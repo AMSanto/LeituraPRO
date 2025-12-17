@@ -40,7 +40,7 @@ export const TextGenerator: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-8 text-white shadow-lg">
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-8 text-white shadow-lg">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
           <Sparkles className="w-8 h-8 text-yellow-300" />
           Gerador de Material
@@ -57,7 +57,7 @@ export const TextGenerator: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nível Escolar</label>
               <select 
-                className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-purple-500 outline-none"
+                className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-primary-500 outline-none"
                 value={level}
                 onChange={(e) => setLevel(e.target.value)}
               >
@@ -75,7 +75,7 @@ export const TextGenerator: React.FC = () => {
                 type="text"
                 required
                 placeholder="Ex: Dinossauros, Espaço, Amizade..."
-                className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-purple-500 outline-none"
+                className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-primary-500 outline-none"
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
               />
@@ -85,7 +85,7 @@ export const TextGenerator: React.FC = () => {
               type="submit" 
               disabled={loading}
               className={`w-full py-3 rounded-lg font-medium text-white flex items-center justify-center gap-2 transition-all ${
-                loading ? 'bg-purple-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700 hover:shadow-lg'
+                loading ? 'bg-primary-400 cursor-not-allowed' : 'bg-primary-600 hover:bg-primary-700 hover:shadow-lg'
               }`}
             >
               {loading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
@@ -108,9 +108,9 @@ export const TextGenerator: React.FC = () => {
                 </div>
               </div>
               
-              <div className="p-6 bg-purple-50 border-t border-purple-100">
-                <h3 className="font-semibold text-purple-900 mb-3">Perguntas de Compreensão Sugeridas:</h3>
-                <ul className="list-disc list-inside space-y-2 text-purple-800">
+              <div className="p-6 bg-primary-50 border-t border-primary-100">
+                <h3 className="font-semibold text-primary-900 mb-3">Perguntas de Compreensão Sugeridas:</h3>
+                <ul className="list-disc list-inside space-y-2 text-primary-800">
                   {result.suggestedQuestions.map((q, i) => (
                     <li key={i}>{q}</li>
                   ))}
@@ -126,7 +126,7 @@ export const TextGenerator: React.FC = () => {
                 </button>
                 <button 
                   onClick={copyToClipboard}
-                  className="px-4 py-2 bg-purple-600 text-white hover:bg-purple-700 rounded-lg flex items-center gap-2 text-sm font-medium shadow-sm"
+                  className="px-4 py-2 bg-primary-600 text-white hover:bg-primary-700 rounded-lg flex items-center gap-2 text-sm font-medium shadow-sm"
                 >
                   <Copy className="w-4 h-4" /> Copiar Tudo
                 </button>

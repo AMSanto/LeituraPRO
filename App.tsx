@@ -5,6 +5,7 @@ import { StudentList } from './components/StudentList';
 import { AssessmentForm } from './components/AssessmentForm';
 import { ClassList } from './components/ClassList';
 import { StudentHistory } from './components/StudentHistory';
+import { TextGenerator } from './components/TextGenerator';
 import { ViewState, Student, Assessment, SchoolClass } from './types';
 import { MOCK_STUDENTS, MOCK_ASSESSMENTS, MOCK_CLASSES } from './constants';
 import { Menu, GraduationCap } from 'lucide-react';
@@ -137,6 +138,8 @@ const App: React.FC = () => {
             onCancel={() => setCurrentView(ViewState.DASHBOARD)} 
           />
         );
+      case ViewState.GENERATOR:
+        return <TextGenerator />;
       default:
         return <Dashboard students={students} assessments={assessments} classes={classes} />;
     }
@@ -162,7 +165,7 @@ const App: React.FC = () => {
             <Menu className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="bg-gradient-to-br from-violet-600 to-fuchsia-600 p-1.5 rounded-lg shadow-sm">
+            <div className="bg-gradient-to-br from-primary-500 to-blue-600 p-1.5 rounded-lg shadow-sm">
               <GraduationCap className="w-5 h-5 text-white" />
             </div>
             <span className="font-bold text-lg text-gray-800 tracking-tight">LeituraPro</span>

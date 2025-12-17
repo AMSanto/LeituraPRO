@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, PenTool, School, GraduationCap } from 'lucide-react';
+import { LayoutDashboard, Users, PenTool, School, GraduationCap, Sparkles } from 'lucide-react';
 import { ViewState } from '../types';
 
 interface SidebarProps {
@@ -12,18 +12,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => 
     { id: ViewState.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard },
     { id: ViewState.CLASSES, label: 'Minhas Turmas', icon: School },
     { id: ViewState.STUDENTS, label: 'Meus Alunos', icon: Users },
+    { id: ViewState.GENERATOR, label: 'Gerador de Textos', icon: Sparkles },
     { id: ViewState.ASSESSMENT, label: 'Nova Avaliação', icon: PenTool },
   ];
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 min-h-screen hidden md:flex flex-col shadow-sm z-10">
       <div className="p-6 flex items-center gap-3 border-b border-gray-100">
-        <div className="bg-gradient-to-br from-violet-600 to-fuchsia-600 p-2.5 rounded-xl shadow-lg shadow-violet-500/30">
-          < GraduationCap className="w-6 h-6 text-white" />
+        <div className="bg-gradient-to-br from-primary-500 to-blue-600 p-2.5 rounded-xl shadow-lg shadow-primary-500/30">
+          <GraduationCap className="w-6 h-6 text-white" />
         </div>
         <div>
           <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">LeituraPro</h1>
-          <p className="text-xs text-violet-600 font-medium">Educador Assistente</p>
+          <p className="text-xs text-primary-700 font-medium">Educador Assistente</p>
         </div>
       </div>
       
@@ -37,11 +38,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => 
               onClick={() => onNavigate(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
                 isActive 
-                  ? 'bg-violet-50 text-violet-700 font-semibold shadow-sm ring-1 ring-violet-100' 
+                  ? 'bg-primary-50 text-primary-700 font-semibold shadow-sm ring-1 ring-primary-100' 
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
               }`}
             >
-              <Icon className={`w-5 h-5 transition-colors ${isActive ? 'text-violet-600' : 'text-gray-400 group-hover:text-gray-600'}`} />
+              <Icon className={`w-5 h-5 transition-colors ${isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-600'}`} />
               {item.label}
             </button>
           );

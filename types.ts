@@ -1,4 +1,16 @@
 
+export enum UserRole {
+  PROFESSOR = 'PROFESSOR',
+  COORDINATION = 'COORDINATION'
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  role: UserRole;
+  email: string;
+}
+
 export interface RemedialRecord {
   entryDate: string;
   entryLevel: string;
@@ -13,6 +25,7 @@ export interface SchoolClass {
   gradeLevel: string;
   year: number;
   teacher: string;
+  teacherId?: string; // ID do professor responsável
 }
 
 export interface Student {
@@ -24,15 +37,7 @@ export interface Student {
   inRemedial?: boolean;
   remedialStartDate?: string;
   remedialEntryLevel?: string;
-  remedialHistory?: RemedialRecord[]; // Histórico de passagens pelo reforço
-}
-
-export interface Competency {
-  id: string;
-  name: string;
-  description: string;
-  category: 'Leitura' | 'Matemática' | 'Socioemocional' | 'Geral';
-  weight: number;
+  remedialHistory?: RemedialRecord[];
 }
 
 export interface AssessmentCriteria {
@@ -75,9 +80,18 @@ export interface Assessment {
   criteria?: AssessmentCriteria;
   notes: string;
   aiFeedback?: string;
+  teacherId?: string;
 }
 
-// Added missing interface for reading material generated via AI
+// Fixed missing Competency export
+export interface Competency {
+  id: string;
+  name: string;
+  description: string;
+  category: 'Leitura' | 'Matemática' | 'Socioemocional' | 'Geral';
+  weight: number;
+}
+
 export interface ReadingMaterial {
   title: string;
   content: string;
@@ -93,5 +107,6 @@ export enum ViewState {
   ASSESSMENT = 'ASSESSMENT',
   GENERATOR = 'GENERATOR',
   COMPETENCIES = 'COMPETENCIES',
-  REMEDIAL = 'REMEDIAL'
+  REMEDIAL = 'REMEDIAL',
+  COORDINATION_PANEL = 'COORDINATION_PANEL'
 }

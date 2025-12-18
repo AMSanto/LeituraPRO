@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { supabase } from '../services/supabase';
-import { GraduationCap, Mail, Lock, Loader2, ArrowRight, UserPlus, LogIn, AlertCircle, User, CheckCircle2, RefreshCw, ChevronLeft, Inbox, ShieldCheck } from 'lucide-react';
+import { GraduationCap, Mail, Lock, Loader2, ArrowRight, UserPlus, LogIn, AlertCircle, User, CheckCircle2, Inbox, ShieldCheck, School } from 'lucide-react';
+import { UserRole } from '../types';
 
 export const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -10,6 +11,7 @@ export const Auth: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [role, setRole] = useState<UserRole>(UserRole.PROFESSOR);
   const [error, setError] = useState<string | null>(null);
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -25,7 +27,10 @@ export const Auth: React.FC = () => {
           email, 
           password,
           options: {
-            data: { full_name: fullName },
+            data: { 
+              full_name: fullName,
+              role: role 
+            },
             emailRedirectTo: window.location.origin,
           }
         });
@@ -36,48 +41,20 @@ export const Auth: React.FC = () => {
         if (signInError) throw signInError;
       }
     } catch (err: any) {
-      let msg = err.message;
-      if (msg.includes("Invalid login")) msg = "E-mail ou senha incorretos.";
-      if (msg.includes("Email not confirmed")) {
-        msg = "O Supabase está exigindo confirmação por e-mail, mas o envio pode falhar no plano gratuito.";
-      }
-      setError(msg || 'Erro na autenticação.');
+      setError(err.message || 'Erro na autenticação.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const backToLogin = () => {
-    setSuccess(false);
-    setIsSignUp(false);
-    setError(null);
   };
 
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-mesh p-4">
         <div className="w-full max-w-md glass rounded-3xl p-10 shadow-2xl text-center border border-white/40 animate-fade-in">
-          <div className="bg-green-100 p-4 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 className="w-10 h-10 text-green-600" />
-          </div>
-          <h2 className="text-2xl font-black text-gray-900 mb-4">Conta Criada!</h2>
-          
-          <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl mb-8 text-left">
-            <h4 className="text-amber-800 text-xs font-black uppercase tracking-widest mb-3 flex items-center gap-2">
-              <Inbox className="w-4 h-4" /> Importante sobre o acesso
-            </h4>
-            <p className="text-xs text-amber-700 leading-relaxed font-medium">
-              Se você não receber o e-mail de confirmação, é necessário entrar no painel do Supabase e desativar a opção <strong>"Confirm Email"</strong> em <i>Authentication > Providers > Email</i>.
-            </p>
-          </div>
-
-          <button 
-            onClick={backToLogin}
-            className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-gray-800 transition-all shadow-xl active:scale-[0.98]"
-          >
-            <ChevronLeft className="w-5 h-5" />
-            Voltar para o Login
-          </button>
+          <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-6" />
+          <h2 className="text-2xl font-black text-gray-900 mb-4 uppercase">Conta Criada!</h2>
+          <p className="text-sm text-gray-600 mb-8 font-medium">Verifique seu e-mail ou utilize o login direto se as confirmações estiverem desativadas.</p>
+          <button onClick={() => { setSuccess(false); setIsSignUp(false); }} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl">Entrar Agora</button>
         </div>
       </div>
     );
@@ -85,102 +62,74 @@ export const Auth: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-mesh p-4 relative overflow-hidden">
-      <div className="w-full max-w-md glass rounded-3xl p-8 shadow-2xl relative z-10 border border-white/40 animate-fade-in">
-        <div className="flex flex-col items-center mb-8 text-center">
-          <div className="bg-gradient-to-br from-primary-500 to-blue-600 p-4 rounded-2xl shadow-xl mb-4">
+      <div className="w-full max-w-md glass rounded-[3rem] p-10 shadow-2xl relative z-10 border border-white/40 animate-fade-in">
+        <div className="flex flex-col items-center mb-10 text-center">
+          <div className="bg-gray-900 p-4 rounded-[1.5rem] shadow-xl mb-4">
             <GraduationCap className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight">LeituraPro</h1>
-          <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px] mt-1">Gestão Pedagógica Inteligente</p>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">LeituraPro</h1>
+          <p className="text-gray-400 font-black uppercase tracking-widest text-[10px] mt-1">Gestão Pedagógica Inteligente</p>
         </div>
 
-        <form onSubmit={handleAuth} className="space-y-4">
+        <form onSubmit={handleAuth} className="space-y-5">
           {isSignUp && (
-            <div className="animate-fade-in">
-              <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Nome Completo</label>
-              <div className="relative group">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
-                <input
-                  type="text"
-                  required
-                  className="w-full pl-11 pr-4 py-3.5 bg-white/60 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none transition-all font-medium"
-                  placeholder="Seu nome"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                />
+            <div className="space-y-5 animate-fade-in">
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Nome Completo</label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input type="text" required className="w-full pl-12 pr-4 py-4 bg-white/70 rounded-2xl border-none ring-2 ring-gray-100 focus:ring-primary-500 outline-none font-bold" placeholder="Seu nome" value={fullName} onChange={e => setFullName(e.target.value)} />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Cargo / Função</label>
+                <div className="flex gap-2">
+                  <button 
+                    type="button" 
+                    onClick={() => setRole(UserRole.PROFESSOR)}
+                    className={`flex-1 py-3 rounded-xl border-2 font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${role === UserRole.PROFESSOR ? 'bg-primary-500 border-primary-500 text-white shadow-lg shadow-primary-500/30' : 'bg-white border-gray-100 text-gray-400'}`}
+                  >
+                    <School size={14}/> Professor
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setRole(UserRole.COORDINATION)}
+                    className={`flex-1 py-3 rounded-xl border-2 font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${role === UserRole.COORDINATION ? 'bg-gray-900 border-gray-900 text-white shadow-lg shadow-gray-900/30' : 'bg-white border-gray-100 text-gray-400'}`}
+                  >
+                    <ShieldCheck size={14}/> Coordenação
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">E-mail</label>
-            <div className="relative group">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
-              <input
-                type="email"
-                required
-                className="w-full pl-11 pr-4 py-3.5 bg-white/60 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none transition-all font-medium"
-                placeholder="professor@escola.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">E-mail Institucional</label>
+            <div className="relative">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input type="email" required className="w-full pl-12 pr-4 py-4 bg-white/70 rounded-2xl border-none ring-2 ring-gray-100 focus:ring-primary-500 outline-none font-bold" placeholder="voce@escola.com" value={email} onChange={e => setEmail(e.target.value)} />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Senha</label>
-            <div className="relative group">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary-500 transition-colors" />
-              <input
-                type="password"
-                required
-                minLength={6}
-                className="w-full pl-11 pr-4 py-3.5 bg-white/60 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none transition-all font-medium"
-                placeholder="Mínimo 6 caracteres"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Senha de Acesso</label>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input type="password" required className="w-full pl-12 pr-4 py-4 bg-white/70 rounded-2xl border-none ring-2 ring-gray-100 focus:ring-primary-500 outline-none font-bold" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
             </div>
           </div>
 
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-xs font-bold flex flex-col gap-2 animate-shake">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{error}</span>
-              </div>
-              {error.includes("Email not confirmed") && (
-                <p className="text-[10px] opacity-80 border-t pt-2 mt-1">
-                  Dica: Desative a confirmação de e-mail no painel do Supabase para logar imediatamente.
-                </p>
-              )}
-            </div>
-          )}
+          {error && <div className="p-4 bg-red-50 text-red-600 text-xs font-black uppercase tracking-tight rounded-2xl flex items-center gap-2"><AlertCircle size={14}/> {error}</div>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 bg-primary-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-primary-500/30 transition-all hover:scale-[1.01] active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : (
-              <>
-                {isSignUp ? 'Criar Conta' : 'Acessar Painel'}
-                <ArrowRight className="w-5 h-5" />
-              </>
-            )}
+          <button type="submit" disabled={loading} className="w-full py-5 bg-gray-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:bg-black transition-all flex items-center justify-center gap-3 active:scale-[0.98]">
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>{isSignUp ? 'Criar Conta' : 'Entrar no Sistema'} <ArrowRight size={18}/></>}
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t text-center">
-          <button
-            onClick={() => { setIsSignUp(!isSignUp); setError(null); }}
-            className="text-primary-700 font-black text-sm flex items-center justify-center gap-2 mx-auto hover:text-primary-800 transition-colors"
-          >
-            {isSignUp ? (
-              <><LogIn className="w-4 h-4" /> Já tenho conta. Fazer Login</>
-            ) : (
-              <><UserPlus className="w-4 h-4" /> Sou novo. Criar conta</>
-            )}
+        <div className="mt-8 pt-6 border-t border-black/5 text-center">
+          <button onClick={() => setIsSignUp(!isSignUp)} className="text-[10px] font-black uppercase tracking-widest text-primary-700 hover:text-primary-900 transition-colors">
+            {isSignUp ? 'Já tem acesso? Faça Login' : 'Novo por aqui? Solicite sua conta'}
           </button>
         </div>
       </div>

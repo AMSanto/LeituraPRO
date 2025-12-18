@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { StudentList } from './components/StudentList';
@@ -9,45 +9,100 @@ import { StudentHistory } from './components/StudentHistory';
 import { TextGenerator } from './components/TextGenerator';
 import { CompetencyManager } from './components/CompetencyManager';
 import { RemedialList } from './components/RemedialList';
-import { ViewState, Student, Assessment, SchoolClass, Competency, RemedialRecord } from './types';
-import { Menu, GraduationCap, CheckCircle, User, Settings, X, Users, School } from 'lucide-react';
+import { CoordinationPanel } from './components/CoordinationPanel';
+import { Auth } from './components/Auth';
+import { ViewState, Student, Assessment, SchoolClass, Competency, RemedialRecord, UserRole, UserProfile } from './types';
+import { Menu, GraduationCap, CheckCircle, User, Settings, X, Users, School, Loader2, AlertTriangle } from 'lucide-react';
 import { MOCK_STUDENTS, MOCK_ASSESSMENTS, MOCK_CLASSES, MOCK_COMPETENCIES } from './constants';
+import { supabase } from './services/supabase';
 
 const App: React.FC = () => {
+  const [session, setSession] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [currentView, setCurrentView] = useState<ViewState>(ViewState.DASHBOARD);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   
-  const [teacherName, setTeacherName] = useState(() => localStorage.getItem('lp_teacher_name') || 'Professor(a)');
-
   const [students, setStudents] = useState<Student[]>(() => {
-    const saved = localStorage.getItem('lp_students');
-    return saved ? JSON.parse(saved) : MOCK_STUDENTS;
+    try {
+      const saved = localStorage.getItem('lp_students');
+      return saved ? JSON.parse(saved) : MOCK_STUDENTS;
+    } catch { return MOCK_STUDENTS; }
   });
+  
   const [assessments, setAssessments] = useState<Assessment[]>(() => {
-    const saved = localStorage.getItem('lp_assessments');
-    return saved ? JSON.parse(saved) : MOCK_ASSESSMENTS;
+    try {
+      const saved = localStorage.getItem('lp_assessments');
+      return saved ? JSON.parse(saved) : MOCK_ASSESSMENTS;
+    } catch { return MOCK_ASSESSMENTS; }
   });
+
   const [classes, setClasses] = useState<SchoolClass[]>(() => {
-    const saved = localStorage.getItem('lp_classes');
-    return saved ? JSON.parse(saved) : MOCK_CLASSES;
+    try {
+      const saved = localStorage.getItem('lp_classes');
+      return saved ? JSON.parse(saved) : MOCK_CLASSES;
+    } catch { return MOCK_CLASSES; }
   });
+
   const [competencies, setCompetencies] = useState<Competency[]>(() => {
-    const saved = localStorage.getItem('lp_competencies');
-    return saved ? JSON.parse(saved) : MOCK_COMPETENCIES;
+    try {
+      const saved = localStorage.getItem('lp_competencies');
+      return saved ? JSON.parse(saved) : MOCK_COMPETENCIES;
+    } catch { return MOCK_COMPETENCIES; }
   });
 
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
 
   useEffect(() => {
-    localStorage.setItem('lp_students', JSON.stringify(students));
-    localStorage.setItem('lp_assessments', JSON.stringify(assessments));
-    localStorage.setItem('lp_classes', JSON.stringify(classes));
-    localStorage.setItem('lp_competencies', JSON.stringify(competencies));
-    localStorage.setItem('lp_teacher_name', teacherName);
-  }, [students, assessments, classes, competencies, teacherName]);
+    if (!supabase) {
+      setAuthLoading(false);
+      return;
+    }
+
+    // Carregar sessão inicial
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        setUserProfile({
+          id: session.user.id,
+          name: session.user.user_metadata.full_name || 'Usuário',
+          role: session.user.user_metadata.role || UserRole.PROFESSOR,
+          email: session.user.email || ''
+        });
+      }
+      setAuthLoading(false);
+    });
+
+    // Escutar mudanças de estado
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      if (event === 'SIGNED_OUT') {
+        setUserProfile(null);
+        setCurrentView(ViewState.DASHBOARD);
+      } else if (session?.user) {
+        setUserProfile({
+          id: session.user.id,
+          name: session.user.user_metadata.full_name || 'Usuário',
+          role: session.user.user_metadata.role || UserRole.PROFESSOR,
+          email: session.user.email || ''
+        });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (session) {
+      localStorage.setItem('lp_students', JSON.stringify(students));
+      localStorage.setItem('lp_assessments', JSON.stringify(assessments));
+      localStorage.setItem('lp_classes', JSON.stringify(classes));
+      localStorage.setItem('lp_competencies', JSON.stringify(competencies));
+    }
+  }, [students, assessments, classes, competencies, session]);
 
   const handleSaveStatus = () => {
     setSaveStatus('saving');
@@ -55,53 +110,13 @@ const App: React.FC = () => {
     setTimeout(() => setSaveStatus('idle'), 3000);
   };
 
-  const addClass = (newClass: Omit<SchoolClass, 'id'>) => {
-    setClasses([...classes, { ...newClass, id: crypto.randomUUID() }]);
-    handleSaveStatus();
-  };
-
-  const updateClass = (updated: SchoolClass) => {
-    setClasses(classes.map(c => c.id === updated.id ? updated : c));
-    handleSaveStatus();
-  };
-
-  const deleteClass = (id: string) => {
-    if (confirm("Excluir esta turma apagará os vínculos dos alunos. Confirmar?")) {
-      setClasses(classes.filter(c => c.id !== id));
-      handleSaveStatus();
-    }
-  };
-
-  const addStudent = (newStudent: Omit<Student, 'id'>) => {
-    setStudents([...students, { ...newStudent, id: crypto.randomUUID(), remedialHistory: [] }]);
-    handleSaveStatus();
-  };
-
-  const updateStudent = (updated: Student) => {
-    setStudents(students.map(s => s.id === updated.id ? updated : s));
-    handleSaveStatus();
-  };
-
-  const deleteStudent = (id: string) => {
-    if (confirm("Excluir permanentemente este aluno?")) {
-      setStudents(students.filter(s => s.id !== id));
-      handleSaveStatus();
-    }
-  };
-
   const toggleRemedial = (studentId: string) => {
     setStudents(students.map(s => {
       if (s.id === studentId) {
         const entering = !s.inRemedial;
         const now = new Date().toISOString().split('T')[0];
-        
         if (entering) {
-          return { 
-            ...s, 
-            inRemedial: true, 
-            remedialStartDate: now, 
-            remedialEntryLevel: s.readingLevel 
-          };
+          return { ...s, inRemedial: true, remedialStartDate: now, remedialEntryLevel: s.readingLevel };
         } else {
           const record: RemedialRecord = {
             entryDate: s.remedialStartDate!,
@@ -110,13 +125,7 @@ const App: React.FC = () => {
             exitLevel: s.readingLevel,
             durationDays: Math.ceil(Math.abs(new Date(now).getTime() - new Date(s.remedialStartDate!).getTime()) / (1000 * 60 * 60 * 24))
           };
-          return { 
-            ...s, 
-            inRemedial: false, 
-            remedialStartDate: undefined,
-            remedialEntryLevel: undefined,
-            remedialHistory: [...(s.remedialHistory || []), record]
-          };
+          return { ...s, inRemedial: false, remedialStartDate: undefined, remedialEntryLevel: undefined, remedialHistory: [...(s.remedialHistory || []), record] };
         }
       }
       return s;
@@ -124,10 +133,41 @@ const App: React.FC = () => {
     handleSaveStatus();
   };
 
+  const handleSignOut = async () => {
+    if (!supabase) return;
+    setAuthLoading(true);
+    await supabase.auth.signOut();
+    setSession(null);
+    setUserProfile(null);
+    setAuthLoading(false);
+    setShowProfileModal(false);
+  };
+
+  if (authLoading) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-gray-50">
+        <Loader2 className="w-12 h-12 text-primary-500 animate-spin mb-4" />
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400">Verificando Credenciais...</p>
+      </div>
+    );
+  }
+
+  if (!supabase) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-red-50 p-6 text-center">
+        <AlertTriangle className="w-16 h-16 text-red-500 mb-4" />
+        <h1 className="text-xl font-black text-gray-900 uppercase mb-2">Erro de Configuração</h1>
+        <p className="text-gray-600 max-w-sm">O serviço de banco de dados não pôde ser inicializado. Verifique as chaves do Supabase.</p>
+      </div>
+    );
+  }
+
+  if (!session) return <Auth />;
+
   return (
     <div className="flex h-screen bg-gray-50 font-sans text-gray-900 overflow-hidden">
       {mobileMenuOpen && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden" onClick={() => setMobileMenuOpen(false)} />}
-      <Sidebar currentView={currentView} onNavigate={(v) => { setCurrentView(v); setMobileMenuOpen(false); }} />
+      <Sidebar currentView={currentView} onNavigate={(v) => { setCurrentView(v); setMobileMenuOpen(false); }} userRole={userProfile?.role} />
       
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         <header className="bg-white border-b border-gray-100 p-4 flex items-center justify-between shrink-0 z-30 shadow-sm px-8">
@@ -157,8 +197,8 @@ const App: React.FC = () => {
               className="flex items-center gap-4 pl-6 py-1 hover:bg-gray-50 rounded-[2rem] transition-all group border-l-2 border-gray-100"
             >
               <div className="text-right hidden sm:block">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Responsável</p>
-                <p className="text-sm font-black text-gray-900 leading-tight group-hover:text-primary-600 transition-colors uppercase">{teacherName}</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{userProfile?.role === UserRole.COORDINATION ? 'Coordenação' : 'Professor'}</p>
+                <p className="text-sm font-black text-gray-900 leading-tight group-hover:text-primary-600 transition-colors uppercase">{userProfile?.name}</p>
               </div>
               <div className="bg-gray-900 p-2.5 rounded-2xl group-hover:bg-primary-500 transition-all shadow-lg">
                 <User size={20} className="text-white" />
@@ -167,14 +207,15 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-10">
+        <div className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar">
           <div className="max-w-7xl mx-auto">
             {currentView === ViewState.DASHBOARD && <Dashboard students={students} assessments={assessments} classes={classes} />}
-            {currentView === ViewState.CLASSES && <ClassList classes={classes} students={students} onAddClass={addClass} onUpdateClass={updateClass} onDeleteClass={deleteClass} onViewStudents={(id) => { setSelectedClassId(id); setCurrentView(ViewState.STUDENTS); }} />}
-            {currentView === ViewState.STUDENTS && <StudentList students={students} classes={classes} assessments={assessments} onAddStudent={addStudent} onUpdateStudent={updateStudent} onDeleteStudent={deleteStudent} onViewHistory={(id) => { setSelectedStudentId(id); setCurrentView(ViewState.STUDENT_HISTORY); }} onToggleRemedial={toggleRemedial} initialClassId={selectedClassId} />}
+            {currentView === ViewState.COORDINATION_PANEL && <CoordinationPanel assessments={assessments} students={students} classes={classes} />}
+            {currentView === ViewState.CLASSES && <ClassList classes={classes} students={students} onAddClass={(nc) => { setClasses([...classes, {...nc, id: crypto.randomUUID(), teacherId: userProfile?.id}]); handleSaveStatus(); }} onUpdateClass={(uc) => setClasses(classes.map(c => c.id === uc.id ? uc : c))} onDeleteClass={(id) => setClasses(classes.filter(c => c.id !== id))} onViewStudents={(id) => { setSelectedClassId(id); setCurrentView(ViewState.STUDENTS); }} />}
+            {currentView === ViewState.STUDENTS && <StudentList students={students} classes={classes} assessments={assessments} onAddStudent={(ns) => { setStudents([...students, {...ns, id: crypto.randomUUID()}]); handleSaveStatus(); }} onUpdateStudent={(us) => setStudents(students.map(s => s.id === us.id ? us : s))} onDeleteStudent={(id) => setStudents(students.filter(s => s.id !== id))} onViewHistory={(id) => { setSelectedStudentId(id); setCurrentView(ViewState.STUDENT_HISTORY); }} onToggleRemedial={toggleRemedial} initialClassId={selectedClassId} />}
             {currentView === ViewState.REMEDIAL && <RemedialList students={students} classes={classes} onToggleRemedial={toggleRemedial} onViewStudent={(id) => { setSelectedStudentId(id); setCurrentView(ViewState.STUDENT_HISTORY); }} />}
             {currentView === ViewState.STUDENT_HISTORY && students.find(s => s.id === selectedStudentId) && <StudentHistory student={students.find(s => s.id === selectedStudentId)!} assessments={assessments.filter(a => a.studentId === selectedStudentId)} onBack={() => setCurrentView(ViewState.STUDENTS)} />}
-            {currentView === ViewState.ASSESSMENT && <AssessmentForm students={students} classes={classes} onSave={(a) => { setAssessments([{...a, id: crypto.randomUUID()}, ...assessments]); setCurrentView(ViewState.DASHBOARD); }} onCancel={() => setCurrentView(ViewState.DASHBOARD)} />}
+            {currentView === ViewState.ASSESSMENT && <AssessmentForm students={students} classes={classes} onSave={(a) => { setAssessments([{...a, id: crypto.randomUUID(), teacherId: userProfile?.id}, ...assessments]); setCurrentView(ViewState.DASHBOARD); }} onCancel={() => setCurrentView(ViewState.DASHBOARD)} />}
             {currentView === ViewState.GENERATOR && <TextGenerator />}
             {currentView === ViewState.COMPETENCIES && <CompetencyManager competencies={competencies} onAdd={(c) => setCompetencies([...competencies, {...c, id: crypto.randomUUID()}])} onUpdate={(u) => setCompetencies(competencies.map(c => c.id === u.id ? u : c))} onDelete={(id) => setCompetencies(competencies.filter(c => c.id !== id))} />}
           </div>
@@ -189,15 +230,16 @@ const App: React.FC = () => {
               <button onClick={() => setShowProfileModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X/></button>
             </div>
             <div className="space-y-8">
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] mb-3 block">Nome Completo</label>
-                <input 
-                  value={teacherName} 
-                  onChange={e => setTeacherName(e.target.value)} 
-                  className="w-full p-5 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-200 focus:ring-2 focus:ring-primary-500 outline-none font-black text-lg transition-all" 
-                />
+              <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100">
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">E-mail</p>
+                <p className="font-bold text-xs text-gray-600 mb-4">{userProfile?.email}</p>
+                
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Nível de Acesso</p>
+                <p className="font-black text-sm text-gray-900 flex items-center gap-2 uppercase">
+                  {userProfile?.role}
+                </p>
               </div>
-              <button onClick={() => setShowProfileModal(false)} className="w-full py-5 bg-gray-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-gray-800 transition-all shadow-2xl active:scale-95">SALVAR ALTERAÇÕES</button>
+              <button onClick={handleSignOut} className="w-full py-5 bg-red-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-all shadow-2xl">ENCERRAR SESSÃO</button>
             </div>
           </div>
         </div>

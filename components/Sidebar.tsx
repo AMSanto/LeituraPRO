@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, PenTool, School, GraduationCap, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Users, PenTool, School, GraduationCap, Sparkles, Award } from 'lucide-react';
 import { ViewState } from '../types';
 
 interface SidebarProps {
@@ -12,6 +12,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => 
     { id: ViewState.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard },
     { id: ViewState.CLASSES, label: 'Minhas Turmas', icon: School },
     { id: ViewState.STUDENTS, label: 'Meus Alunos', icon: Users },
+    { id: ViewState.COMPETENCIES, label: 'Competências', icon: Award },
     { id: ViewState.GENERATOR, label: 'Gerador de Textos', icon: Sparkles },
     { id: ViewState.ASSESSMENT, label: 'Nova Avaliação', icon: PenTool },
   ];

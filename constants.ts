@@ -1,4 +1,4 @@
-import { Student, Assessment, SchoolClass } from "./types";
+import { Student, Assessment, SchoolClass, Competency } from "./types";
 
 export const MOCK_CLASSES: SchoolClass[] = [
   { id: 'c1', name: 'Turma 2A', gradeLevel: '2º Ano', year: 2024 },
@@ -12,6 +12,13 @@ export const MOCK_STUDENTS: Student[] = [
   { id: '3', name: 'Carla Dias', classId: 'c2', readingLevel: 'Iniciante', avatarUrl: 'https://picsum.photos/seed/carla/200' },
   { id: '4', name: 'Davi Oliveira', classId: 'c3', readingLevel: 'Fluente', avatarUrl: 'https://picsum.photos/seed/davi/200' },
   { id: '5', name: 'Elena Souza', classId: 'c2', readingLevel: 'Avançado', avatarUrl: 'https://picsum.photos/seed/elena/200' },
+];
+
+export const MOCK_COMPETENCIES: Competency[] = [
+  { id: 'comp1', name: 'Fluência de Leitura', description: 'Capacidade de ler com ritmo e entonação.', category: 'Leitura', weight: 40 },
+  { id: 'comp2', name: 'Compreensão de Texto', description: 'Habilidade de interpretar e responder sobre o lido.', category: 'Leitura', weight: 30 },
+  { id: 'comp3', name: 'Raciocínio Lógico', description: 'Capacidade de resolver problemas estruturados.', category: 'Matemática', weight: 20 },
+  { id: 'comp4', name: 'Trabalho em Equipe', description: 'Interação e colaboração com colegas.', category: 'Socioemocional', weight: 10 },
 ];
 
 const DEFAULT_CRITERIA = {

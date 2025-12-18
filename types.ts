@@ -13,6 +13,14 @@ export interface Student {
   avatarUrl: string;
 }
 
+export interface Competency {
+  id: string;
+  name: string;
+  description: string;
+  category: 'Leitura' | 'Matemática' | 'Socioemocional' | 'Geral';
+  weight: number; // Valor do peso (ex: 0 a 10 ou 0 a 100%)
+}
+
 export interface AssessmentCriteria {
   fluency: {
     rhythm: boolean;      // Lê com ritmo adequado
@@ -68,5 +76,6 @@ export enum ViewState {
   STUDENTS = 'STUDENTS',
   STUDENT_HISTORY = 'STUDENT_HISTORY',
   ASSESSMENT = 'ASSESSMENT',
-  GENERATOR = 'GENERATOR'
+  GENERATOR = 'GENERATOR',
+  COMPETENCIES = 'COMPETENCIES'
 }

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { supabase } from '../services/supabase';
-import { GraduationCap, Mail, Lock, Loader2, ArrowRight, UserPlus, LogIn } from 'lucide-react';
+import { GraduationCap, Mail, Lock, Loader2, ArrowRight, UserPlus, LogIn, AlertCircle } from 'lucide-react';
 
 export const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -12,6 +12,10 @@ export const Auth: React.FC = () => {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!supabase) {
+      setError("Supabase não está configurado. Verifique as variáveis de ambiente.");
+      return;
+    }
     setLoading(true);
     setError(null);
 
@@ -46,6 +50,13 @@ export const Auth: React.FC = () => {
           <p className="text-gray-600 font-medium">A plataforma inteligente do educador</p>
         </div>
 
+        {!supabase && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl text-red-700 text-sm flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 shrink-0" />
+            <p><strong>Configuração Pendente:</strong> Chave da API do Supabase não encontrada. O login não funcionará até que seja configurado.</p>
+          </div>
+        )}
+
         <form onSubmit={handleAuth} className="space-y-5">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5 ml-1">E-mail</label>
@@ -54,7 +65,8 @@ export const Auth: React.FC = () => {
               <input
                 type="email"
                 required
-                className="w-full pl-11 pr-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none transition-all placeholder:text-gray-400"
+                disabled={!supabase}
+                className="w-full pl-11 pr-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none transition-all placeholder:text-gray-400 disabled:opacity-50"
                 placeholder="exemplo@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -70,7 +82,8 @@ export const Auth: React.FC = () => {
                 type="password"
                 required
                 minLength={6}
-                className="w-full pl-11 pr-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none transition-all placeholder:text-gray-400"
+                disabled={!supabase}
+                className="w-full pl-11 pr-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none transition-all placeholder:text-gray-400 disabled:opacity-50"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -87,8 +100,8 @@ export const Auth: React.FC = () => {
 
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold text-lg shadow-lg shadow-primary-500/30 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed group"
+            disabled={loading || !supabase}
+            className="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold text-lg shadow-lg shadow-primary-500/30 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed group"
           >
             {loading ? (
               <Loader2 className="w-6 h-6 animate-spin" />
@@ -106,7 +119,8 @@ export const Auth: React.FC = () => {
             {isSignUp ? 'Já possui uma conta?' : 'Ainda não tem acesso?'}
             <button
               onClick={() => setIsSignUp(!isSignUp)}
-              className="ml-2 text-primary-700 font-bold hover:underline underline-offset-4 decoration-2"
+              disabled={!supabase}
+              className="ml-2 text-primary-700 font-bold hover:underline underline-offset-4 decoration-2 disabled:opacity-50"
             >
               {isSignUp ? (
                 <span className="flex items-center gap-1 inline-flex">

@@ -46,8 +46,8 @@ export const Auth: React.FC = () => {
           <div className="bg-gradient-to-br from-primary-500 to-blue-600 p-4 rounded-2xl shadow-xl shadow-primary-500/40 mb-4 transition-transform hover:scale-110 duration-300">
             <GraduationCap className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">LeituraPro</h1>
-          <p className="text-gray-600 font-medium">A plataforma inteligente do educador</p>
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">LeituraPro AntMarques</h1>
+          <p className="text-gray-600 font-medium">Gestão Pedagógica com Inteligência</p>
         </div>
 
         {!supabase && (
@@ -67,7 +67,7 @@ export const Auth: React.FC = () => {
                 required
                 disabled={!supabase}
                 className="w-full pl-11 pr-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-primary-100 focus:border-primary-500 outline-none transition-all placeholder:text-gray-400 disabled:opacity-50"
-                placeholder="exemplo@email.com"
+                placeholder="professor@escola.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -107,7 +107,7 @@ export const Auth: React.FC = () => {
               <Loader2 className="w-6 h-6 animate-spin" />
             ) : (
               <>
-                {isSignUp ? 'Criar Conta' : 'Entrar Agora'}
+                {isSignUp ? 'Criar Conta Grátis' : 'Entrar no Painel'}
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </>
             )}

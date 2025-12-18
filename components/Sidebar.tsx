@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { LayoutDashboard, Users, PenTool, School, GraduationCap, Sparkles, Award } from 'lucide-react';
 import { ViewState } from '../types';
@@ -24,8 +25,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => 
           <GraduationCap className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h1 className="text-xl font-extrabold text-gray-900 tracking-tight">LeituraPro</h1>
-          <p className="text-xs text-primary-700 font-medium">Educador Assistente</p>
+          <h1 className="text-lg font-extrabold text-gray-900 tracking-tight leading-tight">LeituraPro <br/>AntMarques</h1>
+          <p className="text-[10px] text-primary-700 font-bold uppercase tracking-wider">Educador Pro</p>
         </div>
       </div>
       
@@ -57,7 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => 
             <p className="text-sm font-bold">Dica do Dia</p>
           </div>
           <p className="text-xs leading-relaxed opacity-80 font-light">
-            A consistência vence a intensidade. 10 minutos de leitura diária valem mais que 1 hora semanal.
+            O RLS está ativo. Seus dados estão protegidos e visíveis apenas para você.
           </p>
         </div>
       </div>

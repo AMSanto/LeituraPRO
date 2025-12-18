@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { StudentList } from './components/StudentList';
@@ -11,7 +11,7 @@ import { CompetencyManager } from './components/CompetencyManager';
 import { Auth } from './components/Auth';
 import { supabase } from './services/supabase';
 import { ViewState, Student, Assessment, SchoolClass, Competency } from './types';
-import { Menu, GraduationCap, LogOut, Loader2, RefreshCw, AlertTriangle, Settings, ExternalLink } from 'lucide-react';
+import { Menu, GraduationCap, LogOut, Loader2, RefreshCw, AlertTriangle, Settings, ExternalLink, ShieldAlert } from 'lucide-react';
 
 const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
@@ -38,28 +38,21 @@ const App: React.FC = () => {
             <Settings className="w-10 h-10 animate-spin-slow" />
           </div>
           <h1 className="text-2xl font-black text-gray-900 mb-2">Erro de Configuração</h1>
-          <p className="text-gray-600 mb-6">
-            Não foi possível inicializar o cliente Supabase. Verifique suas credenciais.
-          </p>
-          <a 
-            href="https://supabase.com/dashboard" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition-all"
-          >
-            Abrir Dashboard Supabase <ExternalLink className="w-4 h-4" />
-          </a>
+          <p className="text-gray-600 mb-6">Não foi possível inicializar o cliente Supabase.</p>
         </div>
       </div>
     );
   }
 
-  // 2. Monitorar Sessão
+  // 2. Monitorar Sessão com cleanup robusto
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setAuthLoading(false);
-    });
+    };
+
+    checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
@@ -74,12 +67,15 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // 3. Buscar Dados
-  const fetchUserData = async () => {
-    if (!session || !supabase) return;
+  // 3. Buscar Dados com tratamento de erro RLS
+  const fetchUserData = useCallback(async () => {
+    if (!session?.user?.id || !supabase) return;
+    
     setDataLoading(true);
     setDbError(null);
+    
     try {
+      // Nota: As políticas RLS no servidor cuidarão de filtrar pelo user_id automaticamente
       const [clsRes, stdRes, astRes, cptRes] = await Promise.all([
         supabase.from('school_classes').select('*').order('name'),
         supabase.from('students').select('*').order('name'),
@@ -97,101 +93,102 @@ const App: React.FC = () => {
       setAssessments(astRes.data || []);
       setCompetencies(cptRes.data || []);
     } catch (error: any) {
-      console.error('Erro ao buscar dados:', error);
-      setDbError(error.message);
+      console.error('Erro de permissão ou conexão:', error);
+      setDbError(error.message === 'new row violates row-level security policy' 
+        ? 'Violação de segurança: Você não tem permissão para esta operação.' 
+        : `Falha ao carregar dados: ${error.message}`);
     } finally {
       setDataLoading(false);
     }
-  };
+  }, [session]);
 
   useEffect(() => {
     if (session) fetchUserData();
-  }, [session]);
+  }, [session, fetchUserData]);
 
-  // --- HANDLERS ---
+  // --- HANDLERS COM PROTEÇÃO DE ID ---
+
+  const handleAction = async (action: () => Promise<any>, successMsg?: string) => {
+    try {
+      const { error } = await action();
+      if (error) {
+        if (error.code === '42501') throw new Error('Acesso negado por política de segurança (RLS).');
+        throw error;
+      }
+      if (successMsg) console.log(successMsg);
+    } catch (error: any) {
+      alert(`Erro: ${error.message}`);
+      return false;
+    }
+    return true;
+  };
 
   const handleAddClass = async (newClass: Omit<SchoolClass, 'id'>) => {
-    if (!supabase) return;
     const { data, error } = await supabase.from('school_classes').insert([{ ...newClass, user_id: session.user.id }]).select();
-    if (error) alert(error.message);
-    else if (data) setClasses([...classes, data[0]]);
+    if (!error && data) setClasses([...classes, data[0]]);
+    else if (error) alert(`Erro ao criar turma: ${error.message}`);
   };
 
   const handleUpdateClass = async (updatedClass: SchoolClass) => {
-    if (!supabase) return;
-    const { error } = await supabase.from('school_classes').update(updatedClass).eq('id', updatedClass.id);
-    if (error) alert(error.message);
-    else setClasses(classes.map(c => c.id === updatedClass.id ? updatedClass : c));
+    const { error } = await supabase.from('school_classes').update(updatedClass).eq('id', updatedClass.id).eq('user_id', session.user.id);
+    if (!error) setClasses(classes.map(c => c.id === updatedClass.id ? updatedClass : c));
+    else alert(`Erro ao atualizar: ${error.message}`);
   };
 
   const handleDeleteClass = async (id: string) => {
-    if (!supabase) return;
-    if (window.confirm('Excluir turma?')) {
-      const { error } = await supabase.from('school_classes').delete().eq('id', id);
-      if (error) alert(error.message);
-      else setClasses(classes.filter(c => c.id !== id));
-    }
+    if (!window.confirm('Excluir turma?')) return;
+    const { error } = await supabase.from('school_classes').delete().eq('id', id).eq('user_id', session.user.id);
+    if (!error) setClasses(classes.filter(c => c.id !== id));
+    else alert(`Erro ao excluir: ${error.message}`);
   };
 
   const handleAddStudent = async (newStudent: Omit<Student, 'id'>) => {
-    if (!supabase) return;
     const { data, error } = await supabase.from('students').insert([{ ...newStudent, user_id: session.user.id }]).select();
-    if (error) alert(error.message);
-    else if (data) setStudents([...students, data[0]]);
+    if (!error && data) setStudents([...students, data[0]]);
+    else alert(`Erro ao adicionar aluno: ${error.message}`);
   };
 
   const handleUpdateStudent = async (updatedStudent: Student) => {
-    if (!supabase) return;
-    const { error } = await supabase.from('students').update(updatedStudent).eq('id', updatedStudent.id);
-    if (error) alert(error.message);
-    else setStudents(students.map(s => s.id === updatedStudent.id ? updatedStudent : s));
+    const { error } = await supabase.from('students').update(updatedStudent).eq('id', updatedStudent.id).eq('user_id', session.user.id);
+    if (!error) setStudents(students.map(s => s.id === updatedStudent.id ? updatedStudent : s));
+    else alert(`Erro ao atualizar aluno: ${error.message}`);
   };
 
   const handleDeleteStudent = async (id: string) => {
-    if (!supabase) return;
-    if (window.confirm('Excluir aluno?')) {
-      const { error } = await supabase.from('students').delete().eq('id', id);
-      if (error) alert(error.message);
-      else setStudents(students.filter(s => s.id !== id));
-    }
+    if (!window.confirm('Excluir aluno?')) return;
+    const { error } = await supabase.from('students').delete().eq('id', id).eq('user_id', session.user.id);
+    if (!error) setStudents(students.filter(s => s.id !== id));
+    else alert(`Erro ao excluir: ${error.message}`);
   };
 
   const handleAddAssessment = async (newAssessment: Omit<Assessment, 'id'>) => {
-    if (!supabase) return;
     const { data, error } = await supabase.from('assessments').insert([{ ...newAssessment, user_id: session.user.id }]).select();
-    if (error) alert(error.message);
-    else if (data) {
+    if (!error && data) {
       setAssessments([data[0], ...assessments]);
       setCurrentView(ViewState.DASHBOARD);
-    }
+    } else alert(`Erro ao salvar avaliação: ${error.message}`);
   };
 
-  // HANDLERS COMPETÊNCIAS (INTEGRADOS AGORA)
   const handleAddCompetency = async (newComp: Omit<Competency, 'id'>) => {
-    if (!supabase) return;
     const { data, error } = await supabase.from('competencies').insert([{ ...newComp, user_id: session.user.id }]).select();
-    if (error) alert(error.message);
-    else if (data) setCompetencies([...competencies, data[0]]);
+    if (!error && data) setCompetencies([...competencies, data[0]]);
+    else alert(`Erro: ${error.message}`);
   };
 
   const handleUpdateCompetency = async (updatedComp: Competency) => {
-    if (!supabase) return;
-    const { error } = await supabase.from('competencies').update(updatedComp).eq('id', updatedComp.id);
-    if (error) alert(error.message);
-    else setCompetencies(competencies.map(c => c.id === updatedComp.id ? updatedComp : c));
+    const { error } = await supabase.from('competencies').update(updatedComp).eq('id', updatedComp.id).eq('user_id', session.user.id);
+    if (!error) setCompetencies(competencies.map(c => c.id === updatedComp.id ? updatedComp : c));
+    else alert(`Erro: ${error.message}`);
   };
 
   const handleDeleteCompetency = async (id: string) => {
-    if (!supabase) return;
-    if (window.confirm('Deseja excluir esta competência?')) {
-      const { error } = await supabase.from('competencies').delete().eq('id', id);
-      if (error) alert(error.message);
-      else setCompetencies(competencies.filter(c => c.id !== id));
-    }
+    if (!window.confirm('Excluir competência?')) return;
+    const { error } = await supabase.from('competencies').delete().eq('id', id).eq('user_id', session.user.id);
+    if (!error) setCompetencies(competencies.filter(c => c.id !== id));
+    else alert(`Erro: ${error.message}`);
   };
 
   const handleSignOut = async () => {
-    if (!supabase) return;
     if (window.confirm("Deseja realmente sair?")) {
       await supabase.auth.signOut();
     }
@@ -219,11 +216,20 @@ const App: React.FC = () => {
   const renderContent = () => {
     if (dbError) {
       return (
-        <div className="h-full flex flex-col items-center justify-center py-20 text-center">
-          <AlertTriangle className="w-12 h-12 text-red-500 mb-4" />
-          <h2 className="text-xl font-bold text-gray-800">Erro de Conexão</h2>
-          <p className="text-gray-500 mt-2">{dbError}</p>
-          <button onClick={fetchUserData} className="mt-6 px-6 py-2 bg-primary-600 text-white rounded-xl font-bold">Tentar Novamente</button>
+        <div className="h-full flex flex-col items-center justify-center py-20 text-center animate-fade-in">
+          <div className="bg-red-50 p-6 rounded-full mb-6">
+            <ShieldAlert className="w-12 h-12 text-red-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800">Acesso Restrito ou Falha</h2>
+          <p className="text-gray-500 mt-2 max-w-md">{dbError}</p>
+          <div className="flex gap-4 mt-8">
+            <button onClick={fetchUserData} className="px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-all flex items-center gap-2">
+              <RefreshCw className="w-4 h-4" /> Tentar Novamente
+            </button>
+            <button onClick={() => setDbError(null)} className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-300 transition-all">
+              Ignorar
+            </button>
+          </div>
         </div>
       );
     }
@@ -232,7 +238,7 @@ const App: React.FC = () => {
       return (
         <div className="h-full flex flex-col items-center justify-center py-20">
           <RefreshCw className="w-10 h-10 animate-spin mb-4 text-primary-500" />
-          <p className="font-bold text-gray-700">Sincronizando dados...</p>
+          <p className="font-bold text-gray-700 animate-pulse">Protegendo sua sessão e carregando dados...</p>
         </div>
       );
     }
@@ -278,15 +284,15 @@ const App: React.FC = () => {
             <div className="bg-gradient-to-br from-primary-500 to-blue-600 p-2 rounded-xl shadow-lg">
               <GraduationCap className="w-5 h-5 text-white" />
             </div>
-            <span className="font-extrabold text-xl text-gray-800 tracking-tight hidden sm:inline">LeituraPro AI</span>
+            <span className="font-extrabold text-xl text-gray-800 tracking-tight hidden sm:inline">LeituraPro AntMarques</span>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex flex-col items-end px-3 py-1 bg-gray-50 border border-gray-100 rounded-xl">
-                <span className="text-[10px] font-bold text-gray-400 uppercase">Professor(a)</span>
-                <span className="text-sm text-primary-700 font-bold">{session?.user?.email}</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase">Acesso Seguro</span>
+                <span className="text-sm text-primary-700 font-bold truncate max-w-[150px]">{session?.user?.email}</span>
             </div>
-            <button onClick={handleSignOut} className="text-gray-400 hover:text-red-600 p-2.5 rounded-xl hover:bg-red-50">
+            <button onClick={handleSignOut} title="Sair com segurança" className="text-gray-400 hover:text-red-600 p-2.5 rounded-xl hover:bg-red-50 transition-colors">
                 <LogOut className="w-5 h-5" />
             </button>
           </div>

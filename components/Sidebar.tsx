@@ -1,14 +1,15 @@
 
 import React from 'react';
-import { LayoutDashboard, Users, PenTool, School, GraduationCap, Sparkles, Award } from 'lucide-react';
+import { LayoutDashboard, Users, PenTool, School, GraduationCap, Sparkles, Award, LogOut } from 'lucide-react';
 import { ViewState } from '../types';
 
 interface SidebarProps {
   currentView: ViewState;
   onNavigate: (view: ViewState) => void;
+  onSignOut: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, onSignOut }) => {
   const menuItems = [
     { id: ViewState.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard },
     { id: ViewState.CLASSES, label: 'Minhas Turmas', icon: School },
@@ -51,14 +52,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => 
         })}
       </nav>
 
-      <div className="p-4 border-t border-gray-100">
+      <div className="p-4 border-t border-gray-100 space-y-3">
+        <button 
+          onClick={onSignOut}
+          className="w-full flex items-center gap-3 px-4 py-3 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 font-medium group"
+        >
+          <LogOut className="w-5 h-5 text-gray-400 group-hover:text-red-500 transition-colors" />
+          Sair da Conta
+        </button>
+
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-5 text-white shadow-lg">
           <div className="flex items-center gap-2 mb-2 opacity-90">
             <span className="text-yellow-400">✨</span>
             <p className="text-sm font-bold">Dica do Dia</p>
           </div>
           <p className="text-xs leading-relaxed opacity-80 font-light">
-            O RLS está ativo. Seus dados estão protegidos e visíveis apenas para você.
+            Seus dados estão protegidos por RLS. Somente você tem acesso aos seus registros.
           </p>
         </div>
       </div>

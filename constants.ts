@@ -1,15 +1,16 @@
+
 import { Student, Assessment, SchoolClass, Competency } from "./types";
 
 export const MOCK_CLASSES: SchoolClass[] = [
-  { id: 'c1', name: 'Turma 2A', gradeLevel: '2º Ano', year: 2024 },
-  { id: 'c2', name: 'Turma 2B', gradeLevel: '2º Ano', year: 2024 },
-  { id: 'c3', name: 'Turma 3A', gradeLevel: '3º Ano', year: 2024 },
+  { id: 'c1', name: 'Turma 2A', gradeLevel: '2º Ano', year: 2024, teacher: 'Prof. Marcos Oliveira' },
+  { id: 'c2', name: 'Turma 2B', gradeLevel: '2º Ano', year: 2024, teacher: 'Profa. Ana Costa' },
+  { id: 'c3', name: 'Turma 3A', gradeLevel: '3º Ano', year: 2024, teacher: 'Prof. Ricardo Silva' },
 ];
 
 export const MOCK_STUDENTS: Student[] = [
-  { id: '1', name: 'Alice Silva', classId: 'c1', readingLevel: 'Em Desenvolvimento', avatarUrl: 'https://picsum.photos/seed/alice/200' },
+  { id: '1', name: 'Alice Silva', classId: 'c1', readingLevel: 'Em Desenvolvimento', avatarUrl: 'https://picsum.photos/seed/alice/200', inRemedial: true, remedialStartDate: '2024-05-01' },
   { id: '2', name: 'Bernardo Costa', classId: 'c1', readingLevel: 'Fluente', avatarUrl: 'https://picsum.photos/seed/bernardo/200' },
-  { id: '3', name: 'Carla Dias', classId: 'c2', readingLevel: 'Iniciante', avatarUrl: 'https://picsum.photos/seed/carla/200' },
+  { id: '3', name: 'Carla Dias', classId: 'c2', readingLevel: 'Iniciante', avatarUrl: 'https://picsum.photos/seed/carla/200', inRemedial: true, remedialStartDate: '2024-05-15' },
   { id: '4', name: 'Davi Oliveira', classId: 'c3', readingLevel: 'Fluente', avatarUrl: 'https://picsum.photos/seed/davi/200' },
   { id: '5', name: 'Elena Souza', classId: 'c2', readingLevel: 'Avançado', avatarUrl: 'https://picsum.photos/seed/elena/200' },
 ];
@@ -56,32 +57,6 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
       fluency: { rhythm: true, pauses: false, intonation: true, security: true },
       decoding: { recognition: true, noOmissions: true, complexWords: false },
       comprehension: { mainIdea: true, explicit: true, implicit: true, inference: false, titleRelation: true }
-    }
-  },
-  { 
-    id: '103', 
-    studentId: '2', 
-    date: '2024-03-12', 
-    textTitle: 'A Cigarra e a Formiga', 
-    wpm: 89, 
-    accuracy: 98, 
-    comprehension: 9, 
-    notes: 'Excelente entonação.',
-    criteria: DEFAULT_CRITERIA
-  },
-  { 
-    id: '104', 
-    studentId: '3', 
-    date: '2024-03-15', 
-    textTitle: 'O Pato', 
-    wpm: 25, 
-    accuracy: 70, 
-    comprehension: 4, 
-    notes: 'Dificuldade com sons nasais.',
-    criteria: {
-      fluency: { rhythm: false, pauses: false, intonation: false, security: false },
-      decoding: { recognition: false, noOmissions: false, complexWords: false },
-      comprehension: { mainIdea: true, explicit: true, implicit: false, inference: false, titleRelation: false }
     }
   },
 ];

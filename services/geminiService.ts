@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { Assessment, Student } from "../types";
 
 export const generateStudentAnalysis = async (student: Student & { grade?: string }, assessments: Assessment[]): Promise<string> => {
@@ -13,9 +13,10 @@ export const generateStudentAnalysis = async (student: Student & { grade?: strin
   Gere um feedback pedagógico curto, profissional e direto (em português) focado em fluência e compreensão.`;
 
   try {
-    const response = await ai.models.generateContent({
+    // Calling generateContent with prompt string as per @google/genai coding guidelines
+    const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      contents: prompt,
     });
     return response.text || "Não foi possível gerar a análise no momento.";
   } catch (error) {
@@ -31,9 +32,10 @@ export const generateReadingMaterial = async (level: string, topic: string): Pro
   O retorno deve ser obrigatoriamente um objeto JSON com as propriedades: 'title', 'content' e 'questions' (array de strings).`;
 
   try {
-    const response = await ai.models.generateContent({
+    // Configure responseSchema with Type as per @google/genai guidelines
+    const response: GenerateContentResponse = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -48,7 +50,9 @@ export const generateReadingMaterial = async (level: string, topic: string): Pro
       }
     });
 
-    return JSON.parse(response.text || "{}");
+    // Access .text property directly (not as a method)
+    const jsonStr = response.text?.trim() || "{}";
+    return JSON.parse(jsonStr);
   } catch (error) {
     console.error("Erro na geração de texto Gemini:", error);
     throw new Error("Falha ao gerar o material pedagógico. Tente um tema diferente.");

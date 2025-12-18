@@ -1,16 +1,30 @@
+
+export interface RemedialRecord {
+  entryDate: string;
+  entryLevel: string;
+  exitDate?: string;
+  exitLevel?: string;
+  durationDays?: number;
+}
+
 export interface SchoolClass {
   id: string;
-  name: string; // Ex: "Turma A", "2º Ano B"
-  gradeLevel: string; // Ex: "2º Ano Fundamental"
-  year: number; // Ex: 2024
+  name: string;
+  gradeLevel: string;
+  year: number;
+  teacher: string;
 }
 
 export interface Student {
   id: string;
   name: string;
-  classId: string; // Link to SchoolClass
-  readingLevel: string; // Ex: "Iniciante", "Intermediário", "Avançado"
+  classId: string;
+  readingLevel: string;
   avatarUrl: string;
+  inRemedial?: boolean;
+  remedialStartDate?: string;
+  remedialEntryLevel?: string;
+  remedialHistory?: RemedialRecord[]; // Histórico de passagens pelo reforço
 }
 
 export interface Competency {
@@ -18,34 +32,34 @@ export interface Competency {
   name: string;
   description: string;
   category: 'Leitura' | 'Matemática' | 'Socioemocional' | 'Geral';
-  weight: number; // Valor do peso (ex: 0 a 10 ou 0 a 100%)
+  weight: number;
 }
 
 export interface AssessmentCriteria {
   fluency: {
-    rhythm: boolean;      // Lê com ritmo adequado
-    pauses: boolean;      // Faz pausas corretas
-    intonation: boolean;  // Apresenta entonação
-    security: boolean;    // Demonstra segurança
+    rhythm: boolean;
+    pauses: boolean;
+    intonation: boolean;
+    security: boolean;
   };
   decoding: {
-    recognition: boolean; // Reconhecer palavras sem soletrar
-    noOmissions: boolean; // Evitar trocas, omissão ou acréscimo
-    complexWords: boolean;// Lê corretamente palavras longas
+    recognition: boolean;
+    noOmissions: boolean;
+    complexWords: boolean;
   };
   comprehension: {
-    mainIdea: boolean;    // Ideia principal do texto
-    explicit: boolean;    // Informações explícitas
-    implicit: boolean;    // Informações implícitas
-    inference: boolean;   // Inferências simples
-    titleRelation: boolean;// Relação com o título
+    mainIdea: boolean;
+    explicit: boolean;
+    implicit: boolean;
+    inference: boolean;
+    titleRelation: boolean;
   };
   math?: {
-    numberSense: boolean;    // Senso numérico / Contagem
-    operations: boolean;      // Operações básicas (+, -, etc)
-    problemSolving: boolean;  // Resolução de problemas
-    logicReasoning: boolean;  // Raciocínio lógico
-    geometry: boolean;        // Formas e Geometria
+    numberSense: boolean;
+    operations: boolean;
+    problemSolving: boolean;
+    logicReasoning: boolean;
+    geometry: boolean;
   };
 }
 
@@ -54,15 +68,16 @@ export interface Assessment {
   studentId: string;
   date: string;
   textTitle: string;
-  wpm: number; // Words Per Minute
-  accuracy: number; // Percentage
-  comprehension: number; // 1-10 scale
-  mathScore?: number; // 1-10 scale (Novo)
-  criteria?: AssessmentCriteria; // Novos critérios detalhados
+  wpm: number;
+  accuracy: number;
+  comprehension: number;
+  mathScore?: number;
+  criteria?: AssessmentCriteria;
   notes: string;
   aiFeedback?: string;
 }
 
+// Added missing interface for reading material generated via AI
 export interface ReadingMaterial {
   title: string;
   content: string;
@@ -77,5 +92,6 @@ export enum ViewState {
   STUDENT_HISTORY = 'STUDENT_HISTORY',
   ASSESSMENT = 'ASSESSMENT',
   GENERATOR = 'GENERATOR',
-  COMPETENCIES = 'COMPETENCIES'
+  COMPETENCIES = 'COMPETENCIES',
+  REMEDIAL = 'REMEDIAL'
 }

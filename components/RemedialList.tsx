@@ -1,12 +1,12 @@
 
 import React, { useState } from 'react';
 import { Student, SchoolClass } from '../types';
-import { LifeBuoy, Clock, User, School, Calendar, ArrowRight, History, CheckCircle2, TrendingUp, Plus, Search, X, Users } from 'lucide-react';
+import { LifeBuoy, Clock, User, School, Calendar, ArrowRight, History, CheckCircle2, TrendingUp, Plus, Search, X, Users, Save } from 'lucide-react';
 
 interface RemedialListProps {
   students: Student[];
   classes: SchoolClass[];
-  onToggleRemedial: (studentId: string) => void;
+  onToggleRemedial: (studentId: string, startDate?: string, entryLevel?: string, exitLevel?: string) => void;
   onViewStudent: (studentId: string) => void;
 }
 
@@ -14,6 +14,15 @@ export const RemedialList: React.FC<RemedialListProps> = ({ students, classes, o
   const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState('');
+  
+  // States para matrícula específica
+  const [studentToEnroll, setStudentToEnroll] = useState<Student | null>(null);
+  const [enrollDate, setEnrollDate] = useState(new Date().toISOString().split('T')[0]);
+  const [enrollLevel, setEnrollLevel] = useState('');
+
+  // States para alta específica
+  const [studentToDischarge, setStudentToDischarge] = useState<Student | null>(null);
+  const [dischargeLevel, setDischargeLevel] = useState('');
   
   const activeRemedial = students.filter(s => s.inRemedial);
   
@@ -29,6 +38,30 @@ export const RemedialList: React.FC<RemedialListProps> = ({ students, classes, o
   };
 
   const availableStudents = students.filter(s => !s.inRemedial && (selectedClassId ? s.classId === selectedClassId : true));
+
+  const handleEnrollClick = (student: Student) => {
+    setStudentToEnroll(student);
+    setEnrollLevel(student.readingLevel);
+  };
+
+  const confirmEnroll = () => {
+    if (studentToEnroll) {
+      onToggleRemedial(studentToEnroll.id, enrollDate, enrollLevel);
+      setStudentToEnroll(null);
+    }
+  };
+
+  const handleDischargeClick = (student: Student) => {
+    setStudentToDischarge(student);
+    setDischargeLevel(student.readingLevel);
+  };
+
+  const confirmDischarge = () => {
+    if (studentToDischarge) {
+      onToggleRemedial(studentToDischarge.id, undefined, undefined, dischargeLevel);
+      setStudentToDischarge(null);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -110,7 +143,7 @@ export const RemedialList: React.FC<RemedialListProps> = ({ students, classes, o
                 </div>
                 <div className="p-4 bg-amber-50/30 border-t border-amber-100 flex gap-3">
                   <button onClick={() => onViewStudent(student.id)} className="flex-1 bg-white border-2 border-gray-100 text-gray-600 py-3.5 rounded-2xl text-[10px] font-black hover:bg-gray-100 transition-all uppercase tracking-widest">VER EVOLUÇÃO</button>
-                  <button onClick={() => onToggleRemedial(student.id)} className="flex-1 bg-green-600 text-white py-3.5 rounded-2xl text-[10px] font-black hover:bg-green-700 transition-all shadow-lg shadow-green-600/20 uppercase tracking-widest">DAR ALTA</button>
+                  <button onClick={() => handleDischargeClick(student)} className="flex-1 bg-green-600 text-white py-3.5 rounded-2xl text-[10px] font-black hover:bg-green-700 transition-all shadow-lg shadow-green-600/20 uppercase tracking-widest">DAR ALTA</button>
                 </div>
               </div>
             ))
@@ -167,7 +200,7 @@ export const RemedialList: React.FC<RemedialListProps> = ({ students, classes, o
         </div>
       )}
 
-      {/* Modal para "Puxar" alunos das turmas */}
+      {/* Modal Principal de Matrícula */}
       {showEnrollModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-[110] flex items-center justify-center p-4">
           <div className="bg-white rounded-[3rem] w-full max-w-xl p-12 shadow-2xl animate-fade-in relative max-h-[90vh] flex flex-col ring-1 ring-white/20">
@@ -218,7 +251,7 @@ export const RemedialList: React.FC<RemedialListProps> = ({ students, classes, o
                       </div>
                     </div>
                     <button 
-                      onClick={() => onToggleRemedial(student.id)}
+                      onClick={() => handleEnrollClick(student)}
                       className="bg-white border-2 border-gray-200 text-gray-400 px-5 py-2.5 rounded-xl text-[10px] font-black tracking-widest group-hover:bg-amber-600 group-hover:text-white group-hover:border-amber-600 transition-all shadow-sm active:scale-90"
                     >
                       PUXAR
@@ -229,6 +262,95 @@ export const RemedialList: React.FC<RemedialListProps> = ({ students, classes, o
             </div>
 
             <button onClick={() => setShowEnrollModal(false)} className="mt-8 w-full py-5 bg-gray-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.25em] shadow-2xl hover:bg-gray-800 transition-all active:scale-[0.98]">CONCLUIR SELEÇÃO</button>
+          </div>
+        </div>
+      )}
+
+      {/* Sub-modal: Detalhes da Matrícula */}
+      {studentToEnroll && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[120] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[3rem] w-full max-w-md p-10 shadow-2xl animate-fade-in border border-amber-100">
+            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter mb-8 flex items-center gap-2">
+              <Plus className="text-amber-600"/> Dados da Matrícula
+            </h2>
+            
+            <div className="space-y-6">
+              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
+                <img src={studentToEnroll.avatarUrl} className="w-12 h-12 rounded-xl object-cover" />
+                <p className="font-black text-gray-900 uppercase">{studentToEnroll.name}</p>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block ml-1">Data de Início no Reforço</label>
+                <input 
+                  type="date" 
+                  className="w-full p-4 bg-gray-50 border-none ring-2 ring-gray-100 rounded-2xl focus:ring-amber-500 font-bold"
+                  value={enrollDate}
+                  onChange={(e) => setEnrollDate(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block ml-1">Nível de Entrada</label>
+                <select 
+                  className="w-full p-4 bg-gray-50 border-none ring-2 ring-gray-100 rounded-2xl focus:ring-amber-500 font-bold"
+                  value={enrollLevel}
+                  onChange={(e) => setEnrollLevel(e.target.value)}
+                >
+                  <option>Iniciante</option>
+                  <option>Em Desenvolvimento</option>
+                  <option>Fluente</option>
+                  <option>Avançado</option>
+                </select>
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button onClick={() => setStudentToEnroll(null)} className="flex-1 py-4 font-black text-gray-400 text-xs uppercase tracking-widest">CANCELAR</button>
+                <button onClick={confirmEnroll} className="flex-1 bg-amber-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-amber-600/20">MATRICULAR</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sub-modal: Detalhes da Alta */}
+      {studentToDischarge && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[120] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[3rem] w-full max-w-md p-10 shadow-2xl animate-fade-in border border-green-100">
+            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter mb-8 flex items-center gap-2">
+              <CheckCircle2 className="text-green-600"/> Conclusão do Reforço
+            </h2>
+            
+            <div className="space-y-6">
+              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
+                <img src={studentToDischarge.avatarUrl} className="w-12 h-12 rounded-xl object-cover" />
+                <p className="font-black text-gray-900 uppercase">{studentToDischarge.name}</p>
+              </div>
+
+              <div className="bg-amber-50 p-4 rounded-2xl">
+                <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-1">Entrou como</p>
+                <p className="font-black text-gray-900">{studentToDischarge.remedialEntryLevel}</p>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block ml-1">Nível de Saída (Atualizado)</label>
+                <select 
+                  className="w-full p-4 bg-gray-50 border-none ring-2 ring-gray-100 rounded-2xl focus:ring-green-500 font-bold"
+                  value={dischargeLevel}
+                  onChange={(e) => setDischargeLevel(e.target.value)}
+                >
+                  <option>Iniciante</option>
+                  <option>Em Desenvolvimento</option>
+                  <option>Fluente</option>
+                  <option>Avançado</option>
+                </select>
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button onClick={() => setStudentToDischarge(null)} className="flex-1 py-4 font-black text-gray-400 text-xs uppercase tracking-widest">CANCELAR</button>
+                <button onClick={confirmDischarge} className="flex-1 bg-green-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-green-600/20">FINALIZAR ALTA</button>
+              </div>
+            </div>
           </div>
         </div>
       )}

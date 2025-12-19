@@ -62,7 +62,6 @@ const App: React.FC = () => {
       return;
     }
 
-    // Carregar sessão inicial
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
@@ -76,7 +75,6 @@ const App: React.FC = () => {
       setAuthLoading(false);
     });
 
-    // Escutar mudanças de estado
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       if (event === 'SIGNED_OUT') {
@@ -110,22 +108,35 @@ const App: React.FC = () => {
     setTimeout(() => setSaveStatus('idle'), 3000);
   };
 
-  const toggleRemedial = (studentId: string) => {
+  const toggleRemedial = (studentId: string, startDate?: string, entryLevel?: string, exitLevel?: string) => {
     setStudents(students.map(s => {
       if (s.id === studentId) {
         const entering = !s.inRemedial;
         const now = new Date().toISOString().split('T')[0];
+        
         if (entering) {
-          return { ...s, inRemedial: true, remedialStartDate: now, remedialEntryLevel: s.readingLevel };
+          return { 
+            ...s, 
+            inRemedial: true, 
+            remedialStartDate: startDate || now, 
+            remedialEntryLevel: entryLevel || s.readingLevel 
+          };
         } else {
           const record: RemedialRecord = {
             entryDate: s.remedialStartDate!,
             entryLevel: s.remedialEntryLevel || 'Não informado',
             exitDate: now,
-            exitLevel: s.readingLevel,
+            exitLevel: exitLevel || s.readingLevel,
             durationDays: Math.ceil(Math.abs(new Date(now).getTime() - new Date(s.remedialStartDate!).getTime()) / (1000 * 60 * 60 * 24))
           };
-          return { ...s, inRemedial: false, remedialStartDate: undefined, remedialEntryLevel: undefined, remedialHistory: [...(s.remedialHistory || []), record] };
+          return { 
+            ...s, 
+            readingLevel: exitLevel || s.readingLevel,
+            inRemedial: false, 
+            remedialStartDate: undefined, 
+            remedialEntryLevel: undefined, 
+            remedialHistory: [...(s.remedialHistory || []), record] 
+          };
         }
       }
       return s;

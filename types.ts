@@ -40,30 +40,16 @@ export interface Student {
   remedialHistory?: RemedialRecord[];
 }
 
+export type ProficiencyLevel = 'Insuficiente' | 'Básico' | 'Adequado' | 'Avançado';
+
 export interface AssessmentCriteria {
-  fluency: {
-    rhythm: boolean;
-    pauses: boolean;
-    intonation: boolean;
-    security: boolean;
-  };
-  decoding: {
-    recognition: boolean;
-    noOmissions: boolean;
-    complexWords: boolean;
-  };
-  comprehension: {
-    mainIdea: boolean;
-    explicit: boolean;
-    implicit: boolean;
-    inference: boolean;
-    titleRelation: boolean;
-  };
+  fluency: ProficiencyLevel;
+  decoding: ProficiencyLevel;
+  comprehension: ProficiencyLevel;
   math?: {
     numberSense: boolean;
-    operations: boolean;
-    problemSolving: boolean;
     logicReasoning: boolean;
+    operations: boolean;
     geometry: boolean;
   };
 }
@@ -83,7 +69,6 @@ export interface Assessment {
   teacherId?: string;
 }
 
-// Fixed missing Competency export
 export interface Competency {
   id: string;
   name: string;

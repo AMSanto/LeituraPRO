@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
-import { Student, Assessment, SchoolClass, AssessmentCriteria } from '../types';
-import { Save, AlertCircle, CheckSquare, Square, Calculator, BookOpen, ChevronLeft, School, User } from 'lucide-react';
+import { Student, Assessment, SchoolClass, AssessmentCriteria, ProficiencyLevel } from '../types';
+import { Save, AlertCircle, Calculator, BookOpen, ChevronLeft, School, User, CheckCircle2 } from 'lucide-react';
 
 interface AssessmentFormProps {
   students: Student[];
@@ -11,6 +11,8 @@ interface AssessmentFormProps {
 }
 
 type TabType = 'PORTUGUESE' | 'MATH';
+
+const LEVELS: ProficiencyLevel[] = ['Insuficiente', 'Básico', 'Adequado', 'Avançado'];
 
 export const AssessmentForm: React.FC<AssessmentFormProps> = ({ students, classes, onSave, onCancel }) => {
   const [activeTab, setActiveTab] = useState<TabType>('PORTUGUESE');
@@ -27,24 +29,35 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({ students, classe
   });
 
   const [criteria, setCriteria] = useState<AssessmentCriteria>({
-    fluency: { rhythm: false, pauses: false, intonation: false, security: false },
-    decoding: { recognition: false, noOmissions: false, complexWords: false },
-    comprehension: { mainIdea: false, explicit: false, implicit: false, inference: false, titleRelation: false },
-    math: { numberSense: false, operations: false, problemSolving: false, logicReasoning: false, geometry: false }
+    fluency: 'Básico',
+    decoding: 'Básico',
+    comprehension: 'Básico',
+    math: { 
+      numberSense: false, 
+      logicReasoning: false, 
+      operations: false, 
+      geometry: false 
+    }
   });
 
-  // Filtra alunos baseados na turma selecionada
   const filteredStudents = useMemo(() => {
     if (!selectedClassId) return [];
     return students.filter(s => s.classId === selectedClassId);
   }, [students, selectedClassId]);
 
-  const toggleCriteria = (category: keyof AssessmentCriteria, field: string) => {
+  const handleLevelSelect = (category: 'fluency' | 'decoding' | 'comprehension', level: ProficiencyLevel) => {
     setCriteria(prev => ({
       ...prev,
-      [category]: {
-        ...(prev[category] || {}),
-        [field]: !(prev[category] as any)?.[field]
+      [category]: level
+    }));
+  };
+
+  const toggleMathCriteria = (field: keyof NonNullable<AssessmentCriteria['math']>) => {
+    setCriteria(prev => ({
+      ...prev,
+      math: {
+        ...prev.math!,
+        [field]: !prev.math?.[field]
       }
     }));
   };
@@ -77,7 +90,7 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({ students, classe
         <div className="p-10 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">Nova Avaliação</h2>
-            <p className="text-gray-500 text-sm">Preencha os dados de desempenho do aluno</p>
+            <p className="text-gray-500 text-sm">Registro de desempenho por competência</p>
           </div>
           <button onClick={onCancel} className="p-3 text-gray-400 hover:text-gray-600 rounded-full hover:bg-white transition-all shadow-sm">
             <ChevronLeft className="w-6 h-6" />
@@ -85,11 +98,10 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({ students, classe
         </div>
         
         <form onSubmit={handleSubmit} className="p-10 space-y-10">
-          {/* Hierarchical Selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-3">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
-                <School size={12}/> 1. Selecione a Turma
+                <School size={12}/> 1. Turma
               </label>
               <select 
                 required
@@ -97,19 +109,17 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({ students, classe
                 value={selectedClassId}
                 onChange={e => {
                   setSelectedClassId(e.target.value);
-                  setFormData(prev => ({ ...prev, studentId: '' })); // Reset aluno ao mudar turma
+                  setFormData(prev => ({ ...prev, studentId: '' }));
                 }}
               >
                 <option value="">Escolha a turma...</option>
-                {classes.map(c => (
-                  <option key={c.id} value={c.id}>{c.name} ({c.gradeLevel})</option>
-                ))}
+                {classes.map(c => <option key={c.id} value={c.id}>{c.name} ({c.gradeLevel})</option>)}
               </select>
             </div>
 
             <div className="space-y-3">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
-                <User size={12}/> 2. Selecione o Aluno
+                <User size={12}/> 2. Aluno
               </label>
               <select 
                 required
@@ -119,123 +129,56 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({ students, classe
                 onChange={e => setFormData({...formData, studentId: e.target.value})}
               >
                 <option value="">{selectedClassId ? 'Escolha o aluno...' : 'Selecione uma turma primeiro'}</option>
-                {filteredStudents.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
+                {filteredStudents.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Data da Avaliação</label>
-              <input 
-                type="date" 
-                required
-                className="w-full bg-gray-50 border-2 border-transparent rounded-2xl p-4 focus:bg-white focus:ring-4 focus:ring-primary-50 focus:border-primary-500 transition-all outline-none font-bold"
-                value={formData.date}
-                onChange={e => setFormData({...formData, date: e.target.value})}
-              />
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Data</label>
+              <input type="date" required className="w-full bg-gray-50 border-2 border-transparent rounded-2xl p-4 focus:bg-white focus:ring-4 focus:ring-primary-50 focus:border-primary-500 transition-all outline-none font-bold" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} />
             </div>
             <div className="space-y-3">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Referência do Texto</label>
-              <input 
-                type="text" 
-                required
-                placeholder="Ex: Conto Infantil Nível 2"
-                className="w-full bg-gray-50 border-2 border-transparent rounded-2xl p-4 focus:bg-white focus:ring-4 focus:ring-primary-50 focus:border-primary-500 transition-all outline-none font-bold"
-                value={formData.textTitle}
-                onChange={e => setFormData({...formData, textTitle: e.target.value})}
-              />
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Atividade / Texto</label>
+              <input type="text" required placeholder="Ex: Avaliação de Fluência 01" className="w-full bg-gray-50 border-2 border-transparent rounded-2xl p-4 focus:bg-white focus:ring-4 focus:ring-primary-50 focus:border-primary-500 transition-all outline-none font-bold" value={formData.textTitle} onChange={e => setFormData({...formData, textTitle: e.target.value})} />
             </div>
           </div>
 
-          {/* Navigation Tabs */}
           <div className="flex bg-gray-100 p-2 rounded-2xl w-fit mx-auto shadow-inner">
-            <button
-              type="button"
-              onClick={() => setActiveTab('PORTUGUESE')}
-              className={`px-10 py-3 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all ${
-                activeTab === 'PORTUGUESE' ? 'bg-white shadow-xl text-primary-600' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <BookOpen className="w-4 h-4" /> Português
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('MATH')}
-              className={`px-10 py-3 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all ${
-                activeTab === 'MATH' ? 'bg-white shadow-xl text-amber-600' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <Calculator className="w-4 h-4" /> Matemática
-            </button>
+            <button type="button" onClick={() => setActiveTab('PORTUGUESE')} className={`px-10 py-3 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'PORTUGUESE' ? 'bg-white shadow-xl text-primary-600' : 'text-gray-500 hover:text-gray-700'}`}><BookOpen className="w-4 h-4" /> Português</button>
+            <button type="button" onClick={() => setActiveTab('MATH')} className={`px-10 py-3 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'MATH' ? 'bg-white shadow-xl text-amber-600' : 'text-gray-500 hover:text-gray-700'}`}><Calculator className="w-4 h-4" /> Matemática</button>
           </div>
 
           <div className="bg-gray-50/50 rounded-[2rem] p-8 border border-gray-100">
             {activeTab === 'PORTUGUESE' ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-10 animate-fade-in">
-                <div className="space-y-6">
-                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50"></div> Fluência
-                  </h4>
-                  <div className="space-y-3">
-                    <Checkbox label="Ritmo" checked={criteria.fluency.rhythm} onChange={() => toggleCriteria('fluency', 'rhythm')} />
-                    <Checkbox label="Entonação" checked={criteria.fluency.intonation} onChange={() => toggleCriteria('fluency', 'intonation')} />
-                    <Checkbox label="Segurança" checked={criteria.fluency.security} onChange={() => toggleCriteria('fluency', 'security')} />
-                  </div>
-                  <div className="pt-4">
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">WPM (Palavras/Min)</label>
+              <div className="space-y-10 animate-fade-in">
+                <div className="grid grid-cols-1 gap-8">
+                  <LevelSelector label="Fluência" current={criteria.fluency} onSelect={(l) => handleLevelSelect('fluency', l)} />
+                  <LevelSelector label="Decodificação" current={criteria.decoding} onSelect={(l) => handleLevelSelect('decoding', l)} />
+                  <LevelSelector label="Compreensão" current={criteria.comprehension} onSelect={(l) => handleLevelSelect('comprehension', l)} />
+                </div>
+                
+                <div className="pt-6 border-t border-gray-100">
+                  <div className="max-w-xs">
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">WPM (Palavras por Minuto)</label>
                     <input type="number" className="w-full bg-white border-2 border-gray-100 rounded-2xl p-4 font-black text-xl text-center focus:border-primary-500 outline-none transition-all" value={formData.wpm} onChange={e => setFormData({...formData, wpm: Number(e.target.value)})} />
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50"></div> Decodificação
-                  </h4>
-                  <div className="space-y-3">
-                    <Checkbox label="Reconhecimento" checked={criteria.decoding.recognition} onChange={() => toggleCriteria('decoding', 'recognition')} />
-                    <Checkbox label="Sem Omissões" checked={criteria.decoding.noOmissions} onChange={() => toggleCriteria('decoding', 'noOmissions')} />
-                    <Checkbox label="Palavras Longas" checked={criteria.decoding.complexWords} onChange={() => toggleCriteria('decoding', 'complexWords')} />
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-violet-500 shadow-lg shadow-violet-500/50"></div> Compreensão
-                  </h4>
-                  <div className="space-y-3">
-                    <Checkbox label="Ideia Principal" checked={criteria.comprehension.mainIdea} onChange={() => toggleCriteria('comprehension', 'mainIdea')} />
-                    <Checkbox label="Fatos Explícitos" checked={criteria.comprehension.explicit} onChange={() => toggleCriteria('comprehension', 'explicit')} />
-                    <Checkbox label="Inferências" checked={criteria.comprehension.inference} onChange={() => toggleCriteria('comprehension', 'inference')} />
-                  </div>
-                  <div className="pt-4">
-                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Nota Interpretativa: {formData.comprehension}</label>
-                    <input type="range" min="1" max="10" step="1" className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-500" value={formData.comprehension} onChange={e => setFormData({...formData, comprehension: Number(e.target.value)})} />
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="max-w-xl mx-auto space-y-8 animate-fade-in">
+              <div className="max-w-2xl mx-auto space-y-10 animate-fade-in">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Checkbox label="Senso Numérico" checked={!!criteria.math?.numberSense} onChange={() => toggleCriteria('math', 'numberSense')} />
-                  <Checkbox label="Operações" checked={!!criteria.math?.operations} onChange={() => toggleCriteria('math', 'operations')} />
-                  <Checkbox label="Lógica" checked={!!criteria.math?.logicReasoning} onChange={() => toggleCriteria('math', 'logicReasoning')} />
-                  <Checkbox label="Geometria" checked={!!criteria.math?.geometry} onChange={() => toggleCriteria('math', 'geometry')} />
+                  <MathCheckbox label="Senso Numérico" checked={!!criteria.math?.numberSense} onChange={() => toggleMathCriteria('numberSense')} />
+                  <MathCheckbox label="Raciocínio Lógico" checked={!!criteria.math?.logicReasoning} onChange={() => toggleMathCriteria('logicReasoning')} />
+                  <MathCheckbox label="Operações" checked={!!criteria.math?.operations} onChange={() => toggleMathCriteria('operations')} />
+                  <MathCheckbox label="Geometria" checked={!!criteria.math?.geometry} onChange={() => toggleMathCriteria('geometry')} />
                 </div>
                 <div className="bg-amber-50 p-8 rounded-[2rem] border-2 border-amber-100 text-center shadow-inner">
-                  <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-6">Nota de Desempenho Matemático</p>
-                  <div className="flex flex-wrap justify-center gap-3">
+                  <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-6">Nota de Desempenho (1 a 10)</p>
+                  <div className="flex flex-wrap justify-center gap-2">
                     {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => setFormData({...formData, mathScore: n})}
-                        className={`w-12 h-12 rounded-2xl font-black text-sm transition-all shadow-sm ${formData.mathScore === n ? 'bg-amber-500 text-white scale-110 shadow-amber-500/30' : 'bg-white text-amber-600 hover:bg-amber-100'}`}
-                      >
-                        {n}
-                      </button>
+                      <button key={n} type="button" onClick={() => setFormData({...formData, mathScore: n})} className={`w-10 h-10 rounded-xl font-black text-sm transition-all ${formData.mathScore === n ? 'bg-amber-500 text-white scale-110 shadow-lg' : 'bg-white text-amber-600 hover:bg-amber-100'}`}>{n}</button>
                     ))}
                   </div>
                 </div>
@@ -244,21 +187,13 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({ students, classe
           </div>
 
           <div>
-            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">Observações e Parecer</label>
-            <textarea 
-              rows={4}
-              placeholder="Descreva observações específicas do momento da leitura..."
-              className="w-full bg-gray-50 border-2 border-gray-100 rounded-[2rem] p-6 focus:bg-white focus:border-primary-500 outline-none transition-all resize-none font-medium"
-              value={formData.notes}
-              onChange={e => setFormData({...formData, notes: e.target.value})}
-            />
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 ml-1">Observações do Professor</label>
+            <textarea rows={4} placeholder="Descreva as dificuldades ou avanços percebidos..." className="w-full bg-gray-50 border-2 border-gray-100 rounded-[2rem] p-6 focus:bg-white focus:border-primary-500 outline-none transition-all resize-none font-medium" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} />
           </div>
 
           <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6">
-            <button type="button" onClick={onCancel} className="px-10 py-4 text-gray-400 font-black text-xs uppercase tracking-widest hover:text-gray-600 transition-all">Descartar</button>
-            <button type="submit" className="px-12 py-5 bg-gray-900 text-white font-black text-xs uppercase tracking-[0.2em] rounded-[2rem] shadow-2xl hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-3">
-              <Save className="w-5 h-5" /> Finalizar Registro
-            </button>
+            <button type="button" onClick={onCancel} className="px-10 py-4 text-gray-400 font-black text-xs uppercase tracking-widest hover:text-gray-600 transition-all">Cancelar</button>
+            <button type="submit" className="px-12 py-5 bg-gray-900 text-white font-black text-xs uppercase tracking-[0.2em] rounded-[2rem] shadow-2xl hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-3"><Save className="w-5 h-5" /> Salvar Avaliação</button>
           </div>
         </form>
       </div>
@@ -266,15 +201,51 @@ export const AssessmentForm: React.FC<AssessmentFormProps> = ({ students, classe
   );
 };
 
-const Checkbox: React.FC<{ label: string; checked: boolean; onChange: () => void }> = ({ label, checked, onChange }) => (
+const LevelSelector: React.FC<{ label: string, current: ProficiencyLevel, onSelect: (l: ProficiencyLevel) => void }> = ({ label, current, onSelect }) => {
+  const getColors = (level: ProficiencyLevel) => {
+    switch (level) {
+      case 'Insuficiente': return 'bg-red-500 text-white';
+      case 'Básico': return 'bg-amber-500 text-white';
+      case 'Adequado': return 'bg-emerald-500 text-white';
+      case 'Avançado': return 'bg-blue-500 text-white';
+      default: return 'bg-gray-100 text-gray-400';
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{label}</label>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {LEVELS.map(level => (
+          <button
+            key={level}
+            type="button"
+            onClick={() => onSelect(level)}
+            className={`py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${
+              current === level 
+                ? `${getColors(level)} border-transparent shadow-lg scale-105 z-10` 
+                : 'bg-white border-gray-100 text-gray-400 hover:border-gray-300'
+            }`}
+          >
+            {level}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const MathCheckbox: React.FC<{ label: string; checked: boolean; onChange: () => void }> = ({ label, checked, onChange }) => (
   <button
     type="button"
     onClick={onChange}
-    className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left ${
-      checked ? 'bg-primary-50 border-primary-500 text-primary-900 shadow-sm' : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'
+    className={`flex items-center gap-4 p-5 rounded-2xl border-2 transition-all text-left ${
+      checked ? 'bg-amber-50 border-amber-500 text-amber-900 shadow-sm' : 'bg-white border-gray-100 text-gray-400 hover:border-gray-200'
     }`}
   >
-    {checked ? <CheckSquare className="w-5 h-5 text-primary-600" /> : <Square className="w-5 h-5 opacity-30" />}
-    <span className="text-sm font-black uppercase tracking-tight">{label}</span>
+    <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${checked ? 'bg-amber-500 border-amber-500' : 'border-gray-200'}`}>
+      {checked && <CheckCircle2 className="w-4 h-4 text-white" />}
+    </div>
+    <span className="text-xs font-black uppercase tracking-tight">{label}</span>
   </button>
 );

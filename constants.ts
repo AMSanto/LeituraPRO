@@ -22,12 +22,6 @@ export const MOCK_COMPETENCIES: Competency[] = [
   { id: 'comp4', name: 'Trabalho em Equipe', description: 'Interação e colaboração com colegas.', category: 'Socioemocional', weight: 10 },
 ];
 
-const DEFAULT_CRITERIA = {
-  fluency: { rhythm: true, pauses: true, intonation: true, security: true },
-  decoding: { recognition: true, noOmissions: true, complexWords: true },
-  comprehension: { mainIdea: true, explicit: true, implicit: true, inference: true, titleRelation: true }
-};
-
 export const MOCK_ASSESSMENTS: Assessment[] = [
   { 
     id: '101', 
@@ -39,9 +33,15 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     comprehension: 6, 
     notes: 'Leitura silabada em palavras trissílabas.',
     criteria: {
-      fluency: { rhythm: false, pauses: false, intonation: true, security: false },
-      decoding: { recognition: false, noOmissions: true, complexWords: false },
-      comprehension: { mainIdea: true, explicit: true, implicit: false, inference: false, titleRelation: true }
+      fluency: 'Básico',
+      decoding: 'Insuficiente',
+      comprehension: 'Adequado',
+      math: {
+        numberSense: true,
+        logicReasoning: false,
+        operations: true,
+        geometry: false
+      }
     }
   },
   { 
@@ -52,11 +52,17 @@ export const MOCK_ASSESSMENTS: Assessment[] = [
     wpm: 52, 
     accuracy: 91, 
     comprehension: 7, 
-    notes: 'Melhora na velocidade.',
+    notes: 'Melhora na velocidade e decodificação.',
     criteria: {
-      fluency: { rhythm: true, pauses: false, intonation: true, security: true },
-      decoding: { recognition: true, noOmissions: true, complexWords: false },
-      comprehension: { mainIdea: true, explicit: true, implicit: true, inference: false, titleRelation: true }
+      fluency: 'Adequado',
+      decoding: 'Adequado',
+      comprehension: 'Adequado',
+      math: {
+        numberSense: true,
+        logicReasoning: true,
+        operations: true,
+        geometry: true
+      }
     }
   },
 ];

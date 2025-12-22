@@ -1,6 +1,7 @@
+
 import React from 'react';
-import { Student, Assessment } from '../types';
-import { ArrowLeft, Calendar, FileText, CheckCircle, Clock, Book, Calculator } from 'lucide-react';
+import { Student, Assessment, ProficiencyLevel } from '../types';
+import { ArrowLeft, Calendar, FileText, Clock, Book, Calculator, TrendingUp } from 'lucide-react';
 
 interface StudentHistoryProps {
   student: Student;
@@ -9,81 +10,76 @@ interface StudentHistoryProps {
 }
 
 export const StudentHistory: React.FC<StudentHistoryProps> = ({ student, assessments, onBack }) => {
-  // Ordenar avaliações da mais recente para a mais antiga
   const sortedAssessments = [...assessments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+  const getLevelColor = (level?: ProficiencyLevel) => {
+    switch (level) {
+      case 'Insuficiente': return 'bg-red-50 text-red-600 border-red-100';
+      case 'Básico': return 'bg-amber-50 text-amber-600 border-amber-100';
+      case 'Adequado': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+      case 'Avançado': return 'bg-blue-50 text-blue-600 border-blue-100';
+      default: return 'bg-gray-50 text-gray-400 border-gray-100';
+    }
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in pb-20">
       <div className="flex items-center gap-4">
-        <button 
-          onClick={onBack}
-          className="p-2 hover:bg-gray-200 rounded-full transition-colors"
-        >
-          <ArrowLeft className="w-6 h-6 text-gray-600" />
-        </button>
+        <button onClick={onBack} className="p-3 hover:bg-gray-200 rounded-2xl transition-all shadow-sm bg-white"><ArrowLeft className="w-6 h-6 text-gray-600" /></button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Histórico de Desenvolvimento</h1>
-          <p className="text-gray-500">Acompanhamento detalhado: {student.name}</p>
+          <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">Prontuário de Evolução</h1>
+          <p className="text-gray-500 font-medium">{student.name}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Profile Card */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-1">
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center text-center sticky top-8">
-            <img 
-              src={student.avatarUrl} 
-              alt={student.name} 
-              className="w-24 h-24 rounded-full object-cover border-4 border-primary-50 mb-4" 
-            />
-            <h2 className="text-lg font-bold text-gray-900">{student.name}</h2>
-            <div className="mt-2 inline-flex px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-sm font-medium">
+          <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col items-center text-center sticky top-8">
+            <img src={student.avatarUrl} alt={student.name} className="w-32 h-32 rounded-[2.5rem] object-cover border-4 border-gray-50 mb-6 shadow-xl" />
+            <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">{student.name}</h2>
+            <div className="mt-3 inline-flex px-4 py-1.5 bg-primary-50 text-primary-700 rounded-full text-[10px] font-black uppercase tracking-widest border border-primary-100">
               {student.readingLevel}
             </div>
-            <div className="mt-6 w-full space-y-4">
-               <div className="flex justify-between items-center text-sm">
-                 <span className="text-gray-500">Total de Avaliações</span>
-                 <span className="font-semibold">{assessments.length}</span>
+            
+            <div className="mt-8 w-full space-y-4">
+               <div className="flex justify-between items-center text-xs">
+                 <span className="text-gray-400 font-black uppercase">Avaliações</span>
+                 <span className="font-black text-gray-900">{assessments.length}</span>
                </div>
-               <div className="w-full h-px bg-gray-100"></div>
-               <div className="flex justify-between items-center text-sm">
-                 <span className="text-gray-500">Média WPM</span>
-                 <span className="font-semibold">
-                   {assessments.length > 0 
-                     ? Math.round(assessments.reduce((acc, curr) => acc + curr.wpm, 0) / assessments.length) 
-                     : 0}
+               <div className="h-px bg-gray-50"></div>
+               <div className="flex justify-between items-center text-xs">
+                 <span className="text-gray-400 font-black uppercase">Média WPM</span>
+                 <span className="font-black text-primary-600 text-lg">
+                   {assessments.length > 0 ? Math.round(assessments.reduce((acc, curr) => acc + curr.wpm, 0) / assessments.length) : 0}
                  </span>
                </div>
-               <div className="flex justify-between items-center text-sm">
-                 <span className="text-gray-500">Média Matemática</span>
-                 <span className="font-semibold text-orange-600">
-                   {assessments.length > 0 
-                     ? (assessments.reduce((acc, curr) => acc + (curr.mathScore || 0), 0) / assessments.length).toFixed(1) 
-                     : 0}
+               <div className="flex justify-between items-center text-xs">
+                 <span className="text-gray-400 font-black uppercase">Média MAT</span>
+                 <span className="font-black text-amber-600 text-lg">
+                   {assessments.length > 0 ? (assessments.reduce((acc, curr) => acc + (curr.mathScore || 0), 0) / assessments.length).toFixed(1) : 0}
                  </span>
                </div>
             </div>
           </div>
         </div>
 
-        {/* Timeline */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className="lg:col-span-3 space-y-6">
           {sortedAssessments.length === 0 ? (
-            <div className="bg-white p-12 rounded-xl border border-gray-200 border-dashed text-center">
-              <Book className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">Nenhuma avaliação registrada para este aluno.</p>
+            <div className="bg-white p-20 rounded-[2.5rem] border-2 border-dashed border-gray-100 text-center">
+              <Book className="w-16 h-16 text-gray-100 mx-auto mb-4" />
+              <p className="text-gray-400 font-black uppercase tracking-widest">Nenhum registro encontrado.</p>
             </div>
           ) : (
             sortedAssessments.map((assessment) => (
-              <div key={assessment.id} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b border-gray-100 pb-4">
-                   <div className="flex items-center gap-3">
-                     <div className="bg-primary-50 p-2.5 rounded-lg text-primary-700">
-                       <FileText className="w-5 h-5" />
+              <div key={assessment.id} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all group">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-gray-50 pb-6">
+                   <div className="flex items-center gap-4">
+                     <div className="bg-primary-500 p-4 rounded-2xl text-white shadow-lg shadow-primary-500/20">
+                       <FileText className="w-6 h-6" />
                      </div>
                      <div>
-                       <h3 className="font-bold text-gray-900">{assessment.textTitle}</h3>
-                       <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                       <h3 className="font-black text-gray-900 text-lg uppercase tracking-tight">{assessment.textTitle}</h3>
+                       <div className="flex items-center gap-2 text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">
                          <Calendar className="w-3 h-3" />
                          {new Date(assessment.date).toLocaleDateString('pt-BR')}
                        </div>
@@ -91,60 +87,50 @@ export const StudentHistory: React.FC<StudentHistoryProps> = ({ student, assessm
                    </div>
                    
                    <div className="flex gap-4">
-                     <div className="text-center px-4 py-2 bg-gray-50 rounded-lg border border-gray-100">
-                       <div className="text-[10px] text-gray-400 font-bold uppercase">Leitura</div>
-                       <div className="font-bold text-gray-900 text-lg flex items-center gap-1 justify-center">
-                         <Clock className="w-4 h-4 text-primary-500" />
-                         {assessment.wpm}
+                     <div className="text-center px-6 py-3 bg-gray-50 rounded-2xl border border-gray-100 shadow-inner">
+                       <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Fluência</div>
+                       <div className="font-black text-primary-600 text-xl flex items-center gap-2">
+                         <Clock size={18} /> {assessment.wpm} <span className="text-[8px] opacity-50">WPM</span>
                        </div>
                      </div>
-                     <div className="text-center px-4 py-2 bg-gray-50 rounded-lg border border-gray-100">
-                       <div className="text-[10px] text-gray-400 font-bold uppercase">Matemática</div>
-                       <div className="font-bold text-orange-600 text-lg flex items-center gap-1 justify-center">
-                         <Calculator className="w-4 h-4 text-orange-400" />
-                         {assessment.mathScore || '-'}
+                     <div className="text-center px-6 py-3 bg-gray-50 rounded-2xl border border-gray-100 shadow-inner">
+                       <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Matemática</div>
+                       <div className="font-black text-amber-600 text-xl flex items-center gap-2">
+                         <Calculator size={18} /> {assessment.mathScore || '-'}
                        </div>
                      </div>
                    </div>
                 </div>
 
-                <div className="space-y-4">
-                   {/* Notas */}
-                   <div>
-                     <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Observações:</p>
-                     <p className="text-gray-600 text-sm italic bg-gray-50 p-3 rounded-lg border border-gray-100 leading-relaxed">
-                       "{assessment.notes || 'Sem observações adicionais.'}"
-                     </p>
-                   </div>
-
-                   {/* Critérios Combinados */}
+                <div className="space-y-8">
+                   {/* Níveis de Português */}
                    {assessment.criteria && (
-                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                       <div className="bg-blue-50/40 p-3 rounded-lg border border-blue-100">
-                         <h4 className="text-[10px] font-bold text-blue-700 uppercase mb-2">Fluência</h4>
-                         <div className="flex flex-wrap gap-1.5">
-                           {assessment.criteria.fluency.rhythm && <span className="bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0.5 rounded">Ritmo</span>}
-                           {assessment.criteria.fluency.intonation && <span className="bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0.5 rounded">Entonação</span>}
-                           {assessment.criteria.fluency.security && <span className="bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0.5 rounded">Segurança</span>}
-                         </div>
-                       </div>
-                       <div className="bg-primary-50/40 p-3 rounded-lg border border-primary-100">
-                         <h4 className="text-[10px] font-bold text-primary-700 uppercase mb-2">Compreensão</h4>
-                         <div className="flex flex-wrap gap-1.5">
-                           {assessment.criteria.comprehension.mainIdea && <span className="bg-primary-100 text-primary-700 text-[10px] px-1.5 py-0.5 rounded">Ideia Princ.</span>}
-                           {assessment.criteria.comprehension.inference && <span className="bg-primary-100 text-primary-700 text-[10px] px-1.5 py-0.5 rounded">Inferência</span>}
-                         </div>
-                       </div>
-                       <div className="bg-orange-50/40 p-3 rounded-lg border border-orange-100">
-                         <h4 className="text-[10px] font-bold text-orange-700 uppercase mb-2">Matemática</h4>
-                         <div className="flex flex-wrap gap-1.5">
-                           {assessment.criteria.math?.numberSense && <span className="bg-orange-100 text-orange-700 text-[10px] px-1.5 py-0.5 rounded">S. Numérico</span>}
-                           {assessment.criteria.math?.operations && <span className="bg-orange-100 text-orange-700 text-[10px] px-1.5 py-0.5 rounded">Operações</span>}
-                           {assessment.criteria.math?.problemSolving && <span className="bg-orange-100 text-orange-700 text-[10px] px-1.5 py-0.5 rounded">Prob.</span>}
-                         </div>
+                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <ProficiencyBadge label="Fluência" level={assessment.criteria.fluency} colorClass={getLevelColor(assessment.criteria.fluency)} />
+                        <ProficiencyBadge label="Decodificação" level={assessment.criteria.decoding} colorClass={getLevelColor(assessment.criteria.decoding)} />
+                        <ProficiencyBadge label="Compreensão" level={assessment.criteria.comprehension} colorClass={getLevelColor(assessment.criteria.comprehension)} />
+                     </div>
+                   )}
+
+                   {/* Critérios de Matemática */}
+                   {assessment.criteria?.math && (
+                     <div className="bg-amber-50/50 p-6 rounded-3xl border border-amber-100">
+                       <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest mb-4 flex items-center gap-2"><TrendingUp size={12}/> Habilidades Matemáticas</p>
+                       <div className="flex flex-wrap gap-2">
+                         {assessment.criteria.math.numberSense && <MathSkillBadge label="Senso Numérico" />}
+                         {assessment.criteria.math.logicReasoning && <MathSkillBadge label="Raciocínio Lógico" />}
+                         {assessment.criteria.math.operations && <MathSkillBadge label="Operações" />}
+                         {assessment.criteria.math.geometry && <MathSkillBadge label="Geometria" />}
                        </div>
                      </div>
                    )}
+
+                   <div>
+                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Observações Pedagógicas</p>
+                     <p className="text-gray-600 text-sm font-medium bg-gray-50/80 p-5 rounded-2xl border border-gray-100 leading-relaxed italic">
+                       "{assessment.notes || 'Sem observações adicionais.'}"
+                     </p>
+                   </div>
                 </div>
               </div>
             ))
@@ -154,3 +140,16 @@ export const StudentHistory: React.FC<StudentHistoryProps> = ({ student, assessm
     </div>
   );
 };
+
+const ProficiencyBadge: React.FC<{ label: string, level: ProficiencyLevel, colorClass: string }> = ({ label, level, colorClass }) => (
+  <div className={`p-4 rounded-2xl border flex flex-col gap-1 transition-all ${colorClass}`}>
+    <span className="text-[8px] font-black uppercase opacity-60 tracking-widest">{label}</span>
+    <span className="text-xs font-black uppercase tracking-tight">{level}</span>
+  </div>
+);
+
+const MathSkillBadge: React.FC<{ label: string }> = ({ label }) => (
+  <span className="bg-white border border-amber-200 text-amber-700 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm">
+    {label}
+  </span>
+);

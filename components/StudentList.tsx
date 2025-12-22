@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Student, SchoolClass, Assessment, ViewState } from '../types';
-import { Search, Plus, MoreVertical, BookOpen, Filter, Edit, Trash2, History, LifeBuoy, X, TrendingUp } from 'lucide-react';
+import { Search, Plus, MoreVertical, BookOpen, Filter, Edit, Trash2, History, LifeBuoy, X, TrendingUp, Camera, Link as LinkIcon, Upload } from 'lucide-react';
 import { generateStudentAnalysis } from '../services/geminiService';
 
 interface StudentListProps {
@@ -12,7 +12,7 @@ interface StudentListProps {
   onUpdateStudent: (student: Student) => void;
   onDeleteStudent: (id: string) => void;
   onViewHistory: (id: string) => void;
-  onToggleRemedial: (studentId: string) => void; // Adicionado
+  onToggleRemedial: (studentId: string) => void;
   initialClassId?: string;
 }
 
@@ -23,9 +23,6 @@ export const StudentList: React.FC<StudentListProps> = ({
   const [filterClassId, setFilterClassId] = useState(initialClassId);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [studentToEdit, setStudentToEdit] = useState<Student | undefined>(undefined);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
-  const [loadingAi, setLoadingAi] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -123,6 +120,7 @@ export const StudentList: React.FC<StudentListProps> = ({
 };
 
 const StudentModal: React.FC<{ classes: SchoolClass[], studentToEdit?: Student, onClose: () => void, onSave: (s: Omit<Student, 'id'>) => void }> = ({ classes, studentToEdit, onClose, onSave }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: studentToEdit?.name || '',
     classId: studentToEdit?.classId || (classes[0]?.id || ''),
@@ -130,30 +128,86 @@ const StudentModal: React.FC<{ classes: SchoolClass[], studentToEdit?: Student, 
     avatarUrl: studentToEdit?.avatarUrl || `https://picsum.photos/seed/${Math.random()}/200`
   });
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, avatarUrl: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-      <div className="bg-white rounded-[2rem] w-full max-w-md p-10 shadow-2xl animate-fade-in ring-1 ring-black/5">
-        <h2 className="text-2xl font-black mb-8 text-gray-900">{studentToEdit ? 'EDITAR ALUNO' : 'NOVO ALUNO'}</h2>
+      <div className="bg-white rounded-[2rem] w-full max-w-md p-10 shadow-2xl animate-fade-in ring-1 ring-black/5 overflow-y-auto max-h-[90vh] custom-scrollbar">
+        <h2 className="text-2xl font-black mb-8 text-gray-900 uppercase tracking-tighter">{studentToEdit ? 'EDITAR ALUNO' : 'NOVO ALUNO'}</h2>
+        
         <form onSubmit={(e) => { e.preventDefault(); onSave(formData); }} className="space-y-6">
+          {/* Foto do Aluno */}
+          <div className="flex flex-col items-center gap-4 mb-8">
+            <div className="relative group">
+              <img 
+                src={formData.avatarUrl} 
+                alt="Preview" 
+                className="w-32 h-32 rounded-[2.5rem] object-cover ring-4 ring-gray-50 shadow-xl transition-transform group-hover:scale-105"
+              />
+              <button 
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute bottom-2 right-2 p-2.5 bg-purple-600 text-white rounded-2xl shadow-lg hover:bg-purple-700 transition-all"
+              >
+                <Camera size={20} />
+              </button>
+            </div>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/*" 
+              onChange={handleFileChange} 
+            />
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Foto do Estudante</p>
+          </div>
+
           <div>
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block ml-1">Nome do Estudante</label>
             <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-100 focus:ring-2 focus:ring-purple-500 outline-none font-bold transition-all" />
           </div>
+
           <div>
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block ml-1">Turma Vinculada</label>
-            <select value={formData.classId} onChange={e => setFormData({...formData, classId: e.target.value})} className="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-100 focus:ring-2 focus:ring-purple-500 outline-none font-bold transition-all">
-              {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block ml-1 flex items-center gap-2">
+              <LinkIcon size={12} /> URL da Imagem (Opcional)
+            </label>
+            <input 
+              value={formData.avatarUrl} 
+              onChange={e => setFormData({...formData, avatarUrl: e.target.value})} 
+              className="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-100 focus:ring-2 focus:ring-purple-500 outline-none font-bold transition-all text-xs text-gray-400" 
+              placeholder="https://..."
+            />
           </div>
-          <div>
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block ml-1">Nível de Leitura Atual</label>
-            <select value={formData.readingLevel} onChange={e => setFormData({...formData, readingLevel: e.target.value})} className="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-100 focus:ring-2 focus:ring-purple-500 outline-none font-bold transition-all">
-              <option>Iniciante</option><option>Em Desenvolvimento</option><option>Fluente</option><option>Avançado</option>
-            </select>
+
+          <div className="grid grid-cols-1 gap-6">
+            <div>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block ml-1">Turma Vinculada</label>
+              <select value={formData.classId} onChange={e => setFormData({...formData, classId: e.target.value})} className="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-100 focus:ring-2 focus:ring-purple-500 outline-none font-bold transition-all">
+                {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block ml-1">Nível de Leitura Atual</label>
+              <select value={formData.readingLevel} onChange={e => setFormData({...formData, readingLevel: e.target.value})} className="w-full p-4 bg-gray-50 rounded-2xl border-none ring-1 ring-gray-100 focus:ring-2 focus:ring-purple-500 outline-none font-bold transition-all">
+                <option>Iniciante</option><option>Em Desenvolvimento</option><option>Fluente</option><option>Avançado</option>
+              </select>
+            </div>
           </div>
+
           <div className="flex gap-4 pt-6">
-            <button type="button" onClick={onClose} className="flex-1 py-4 font-black text-gray-400 text-sm hover:text-gray-600">CANCELAR</button>
-            <button type="submit" className="flex-1 py-4 bg-purple-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-purple-600/20 hover:bg-purple-700 transition-all">SALVAR</button>
+            <button type="button" onClick={onClose} className="flex-1 py-4 font-black text-gray-400 text-sm hover:text-gray-600 transition-colors">CANCELAR</button>
+            <button type="submit" className="flex-1 py-4 bg-purple-600 text-white rounded-2xl font-black text-sm shadow-xl shadow-purple-600/20 hover:bg-purple-700 transition-all flex items-center justify-center gap-2">
+              <Upload size={18} /> SALVAR
+            </button>
           </div>
         </form>
       </div>

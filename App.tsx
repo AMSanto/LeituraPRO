@@ -12,7 +12,7 @@ import { RemedialList } from './components/RemedialList';
 import { CoordinationPanel } from './components/CoordinationPanel';
 import { Auth } from './components/Auth';
 import { ViewState, Student, Assessment, SchoolClass, UserRole, UserProfile, Competency } from './types';
-import { Menu, CheckCircle, User, X, Users, School, Loader2, AlertTriangle, Trash2, Check, ArrowRight } from 'lucide-react';
+import { Menu, CheckCircle, User, X, Users, School, Loader2, AlertTriangle, Trash2, Check, ArrowRight, LogOut } from 'lucide-react';
 import { supabase } from './services/supabase';
 
 const App: React.FC = () => {
@@ -25,7 +25,6 @@ const App: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   
-  // State para exclusão customizada
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   
   const [students, setStudents] = useState<Student[]>([]);
@@ -84,7 +83,7 @@ const App: React.FC = () => {
         supabase!.from('classes').select('*'),
         supabase!.from('students').select('*'),
         supabase!.from('assessments').select('*').order('date', { ascending: false }),
-        supabase!.from('competencies').select('*')
+        supabase!.from('competencies').select('*').order('name', { ascending: true })
       ]);
       if (resClasses.data) setClasses(resClasses.data);
       if (resStudents.data) setStudents(resStudents.data);
@@ -105,14 +104,22 @@ const App: React.FC = () => {
 
   const addStudent = async (ns: Omit<Student, 'id'>) => {
     handleSaveStatus();
-    const { data } = await supabase!.from('students').insert([ns]).select();
+    const { data, error } = await supabase!.from('students').insert([ns]).select();
+    if (error) {
+      alert("Erro ao cadastrar aluno: " + error.message);
+      return;
+    }
     if (data) setStudents([data[0], ...students]);
   };
 
   const updateStudent = async (us: Student) => {
     handleSaveStatus();
     const { error } = await supabase!.from('students').update(us).eq('id', us.id);
-    if (!error) setStudents(students.map(s => s.id === us.id ? us : s));
+    if (error) {
+      alert("Erro ao atualizar aluno: " + error.message);
+      return;
+    }
+    setStudents(students.map(s => s.id === us.id ? us : s));
   };
 
   const executeDeleteStudent = async () => {
@@ -129,29 +136,89 @@ const App: React.FC = () => {
 
   const addClass = async (nc: Omit<SchoolClass, 'id'>) => {
     handleSaveStatus();
-    const { data } = await supabase!.from('classes').insert([{ ...nc, teacher_id: userProfile?.id }]).select();
+    const { data, error } = await supabase!.from('classes').insert([{ 
+      ...nc, 
+      teacherId: userProfile?.id 
+    }]).select();
+    
+    if (error) {
+      alert("Erro ao cadastrar turma: " + error.message);
+      return;
+    }
     if (data) setClasses([data[0], ...classes]);
   };
 
   const updateClass = async (c: SchoolClass) => {
     handleSaveStatus();
     const { error } = await supabase!.from('classes').update(c).eq('id', c.id);
-    if (!error) setClasses(classes.map(cl => cl.id === c.id ? c : cl));
+    if (error) {
+      alert("Erro ao atualizar turma: " + error.message);
+      return;
+    }
+    setClasses(classes.map(cl => cl.id === c.id ? c : cl));
   };
 
   const deleteClass = async (id: string) => {
     if (!confirm("Excluir esta turma?")) return;
     const { error } = await supabase!.from('classes').delete().eq('id', id);
-    if (!error) setClasses(classes.filter(c => c.id !== id));
+    if (error) {
+      alert("Erro ao excluir turma: " + error.message);
+      return;
+    }
+    setClasses(classes.filter(c => c.id !== id));
   };
 
   const saveAssessment = async (a: Omit<Assessment, 'id'>) => {
     handleSaveStatus();
-    const { data, error } = await supabase!.from('assessments').insert([{ ...a, teacher_id: userProfile?.id }]).select();
+    const { data, error } = await supabase!.from('assessments').insert([{ 
+      ...a, 
+      teacherId: userProfile?.id 
+    }]).select();
+    
+    if (error) {
+      alert("Erro ao salvar avaliação: " + error.message);
+      return;
+    }
     if (data) {
       setAssessments([data[0], ...assessments]);
       setCurrentView(ViewState.DASHBOARD);
     }
+  };
+
+  // Funções para Gerenciamento de Competências (Critérios)
+  const addCompetency = async (nc: Omit<Competency, 'id'>) => {
+    handleSaveStatus();
+    const { data, error } = await supabase!.from('competencies').insert([{ 
+      ...nc, 
+      userId: userProfile?.id 
+    }]).select();
+
+    if (error) {
+      alert("Erro ao salvar critério: " + error.message);
+      return;
+    }
+    if (data) setCompetencies([...competencies, data[0]]);
+  };
+
+  const updateCompetency = async (uc: Competency) => {
+    handleSaveStatus();
+    const { error } = await supabase!.from('competencies').update(uc).eq('id', uc.id);
+    if (error) {
+      alert("Erro ao atualizar critério: " + error.message);
+      return;
+    }
+    setCompetencies(competencies.map(c => c.id === uc.id ? uc : c));
+  };
+
+  const deleteCompetency = async (id: string) => {
+    if (!confirm("Excluir este critério de avaliação?")) return;
+    handleSaveStatus();
+    const { error } = await supabase!.from('competencies').delete().eq('id', id);
+    if (error) {
+      alert("Erro ao excluir critério: " + error.message);
+      return;
+    }
+    setCompetencies(competencies.filter(c => c.id !== id));
   };
 
   const toggleRemedial = async (studentId: string, details?: any) => {
@@ -160,22 +227,25 @@ const App: React.FC = () => {
 
     handleSaveStatus();
     const isEntering = !student.inRemedial;
+    
     const update = {
-      in_remedial: isEntering,
-      remedial_start_date: isEntering ? (details?.startDate || new Date().toISOString()) : null,
-      remedial_entry_level: isEntering ? (details?.entryLevel || student.readingLevel) : null,
-      // Adicionaríamos outros campos conforme necessário na tabela do Supabase
+      inRemedial: isEntering,
+      remedialStartDate: isEntering ? (details?.startDate || new Date().toISOString()) : null,
+      remedialEntryLevel: isEntering ? (details?.entryLevel || student.readingLevel) : null,
     };
 
     const { error } = await supabase!.from('students').update(update).eq('id', studentId);
-    if (!error) {
-      setStudents(students.map(s => s.id === studentId ? { 
-        ...s, 
-        inRemedial: isEntering,
-        remedialStartDate: update.remedial_start_date as any,
-        remedialEntryLevel: update.remedial_entry_level as any
-      } : s));
+    if (error) {
+      alert("Erro ao atualizar reforço: " + error.message);
+      return;
     }
+    
+    setStudents(students.map(s => s.id === studentId ? { 
+      ...s, 
+      inRemedial: isEntering,
+      remedialStartDate: update.remedialStartDate as any,
+      remedialEntryLevel: update.remedialEntryLevel as any
+    } : s));
   };
 
   const handleSignOut = async () => {
@@ -237,12 +307,17 @@ const App: React.FC = () => {
               </div>
             )}
             
-            <button onClick={() => setShowProfileModal(true)} className="flex items-center gap-3 pl-4 py-1 hover:bg-gray-50 rounded-[2rem] transition-all border-l-2 border-gray-100 ml-2 focus:outline-none">
+            <button 
+              onClick={() => setShowProfileModal(true)} 
+              className="flex items-center gap-3 pl-4 py-1.5 pr-2 hover:bg-gray-50 rounded-3xl transition-all border-l-2 border-gray-100 ml-2 focus:outline-none group active:scale-95"
+            >
               <div className="text-right hidden sm:block">
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 leading-none">{userProfile?.role}</p>
-                <p className="text-xs font-black text-gray-900 leading-none uppercase truncate max-w-[120px]">{userProfile?.name}</p>
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5 leading-none">Operador: {userProfile?.role}</p>
+                <p className="text-xs font-black text-gray-900 leading-none uppercase truncate max-w-[140px] group-hover:text-primary-600 transition-colors">
+                  {userProfile?.name || 'Sessão Ativa'}
+                </p>
               </div>
-              <div className="bg-gray-900 p-2.5 rounded-2xl shadow-lg border border-gray-800">
+              <div className="bg-gray-900 p-2.5 rounded-2xl shadow-lg border border-gray-800 ring-2 ring-transparent group-hover:ring-primary-100 transition-all">
                 <User size={18} className="text-white" />
               </div>
             </button>
@@ -259,7 +334,7 @@ const App: React.FC = () => {
             {currentView === ViewState.ASSESSMENT && <AssessmentForm students={students} classes={classes} onSave={saveAssessment} onCancel={() => setCurrentView(ViewState.DASHBOARD)} />}
             {currentView === ViewState.GENERATOR && <TextGenerator />}
             {currentView === ViewState.REMEDIAL && <RemedialList students={students} classes={classes} onToggleRemedial={toggleRemedial} onViewStudent={(id) => { setSelectedStudentId(id); setCurrentView(ViewState.STUDENT_HISTORY); }} />}
-            {currentView === ViewState.COMPETENCIES && <CompetencyManager competencies={competencies} onAdd={(c) => {}} onUpdate={(c) => {}} onDelete={(id) => {}} />}
+            {currentView === ViewState.COMPETENCIES && <CompetencyManager competencies={competencies} onAdd={addCompetency} onUpdate={updateCompetency} onDelete={deleteCompetency} />}
           </div>
         </div>
       </main>
@@ -275,21 +350,30 @@ const App: React.FC = () => {
             <div className="space-y-6">
               <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 shadow-inner">
                 <div className="mb-4">
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Operador Logado</p>
+                  <p className="font-black text-sm text-gray-900 truncate uppercase">{userProfile?.name}</p>
+                </div>
+                <div className="mb-4">
                   <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">E-mail</p>
-                  <p className="font-bold text-xs text-gray-700 truncate">{userProfile?.email}</p>
+                  <p className="font-bold text-xs text-gray-600 truncate">{userProfile?.email}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Perfil</p>
-                  <p className="font-black text-sm text-primary-600 uppercase">{userProfile?.role}</p>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Nível de Acesso</p>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary-100 text-primary-700 rounded-full">
+                    <CheckCircle size={10} />
+                    <p className="font-black text-[10px] uppercase tracking-tight">{userProfile?.role}</p>
+                  </div>
                 </div>
               </div>
-              <button onClick={handleSignOut} className="w-full py-5 bg-red-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] hover:bg-red-700 transition-all shadow-xl active:scale-95">ENCERRAR SESSÃO</button>
+              <button onClick={handleSignOut} className="w-full py-5 bg-red-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] hover:bg-red-700 transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2">
+                <LogOut size={16} /> ENCERRAR SESSÃO
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO (STYLE FOCUSED) */}
+      {/* Confirmation Modal */}
       {studentToDelete && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-xl animate-fade-in" onClick={() => setStudentToDelete(null)} />

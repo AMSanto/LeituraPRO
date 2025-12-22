@@ -44,7 +44,7 @@ export const ClassList: React.FC<ClassListProps> = ({
         </div>
         <button 
           onClick={() => { setClassToEdit(undefined); setIsModalOpen(true); }} 
-          className="w-full sm:w-auto bg-primary-500 hover:bg-primary-600 text-white px-8 py-4 rounded-2xl flex items-center justify-center gap-2 font-black transition-all shadow-lg shadow-primary-500/20 active:scale-95 text-[10px] uppercase tracking-widest shrink-0"
+          className="w-full sm:w-auto bg-brand-gradient hover:brightness-110 text-white px-8 py-4 rounded-2xl flex items-center justify-center gap-2 font-black transition-all shadow-lg shadow-primary-500/20 active:scale-95 text-[10px] uppercase tracking-widest shrink-0"
         >
           <Plus size={18}/> Nova Turma
         </button>
@@ -74,7 +74,7 @@ export const ClassList: React.FC<ClassListProps> = ({
                   </div>
                 </div>
                 <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight truncate">{cls.name}</h3>
-                <p className="text-[9px] text-primary-700 font-black mb-6 uppercase tracking-widest">{cls.gradeLevel} • {cls.year}</p>
+                <p className="text-[9px] text-primary-600 font-black mb-6 uppercase tracking-widest">{cls.gradeLevel} • {cls.year}</p>
                 
                 <div className="bg-gray-50 rounded-2xl p-4 mb-6 space-y-3 border border-gray-100/50">
                   <div className="flex items-center gap-3 text-xs font-bold text-gray-600"><User size={14} className="text-gray-400"/> {cls.teacher || 'A definir'}</div>
@@ -88,13 +88,12 @@ export const ClassList: React.FC<ClassListProps> = ({
         )}
       </div>
 
-      {/* MODAL MASTER: ESTILO DA IMAGEM (CABEÇALHO CIANO) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-xl animate-fade-in" onClick={() => setIsModalOpen(false)} />
           
           <div className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl relative z-10 animate-fade-in flex flex-col overflow-hidden max-h-[90vh] ring-1 ring-black/5">
-            <div className="p-8 bg-primary-600 text-white flex justify-between items-center relative">
+            <div className="p-8 bg-brand-gradient text-white flex justify-between items-center relative shadow-lg">
               <div>
                 <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter leading-none">
                   {classToEdit ? 'Editar Turma' : 'Nova Unidade'}
@@ -149,7 +148,7 @@ export const ClassList: React.FC<ClassListProps> = ({
                 </button>
                 <button 
                   type="submit" 
-                  className="flex-1 py-4 bg-primary-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:bg-primary-700 transition-all active:scale-95 flex items-center justify-center gap-2"
+                  className="flex-1 py-4 bg-brand-gradient text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl hover:brightness-110 transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
                   <Check size={16} /> CONFIRMAR
                 </button>

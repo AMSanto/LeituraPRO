@@ -54,7 +54,7 @@ export const Auth: React.FC = () => {
           <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-6" />
           <h2 className="text-2xl font-black text-gray-900 mb-4 uppercase">Conta Criada!</h2>
           <p className="text-sm text-gray-600 mb-8 font-medium">Verifique seu e-mail institucional para confirmar seu acesso.</p>
-          <button onClick={() => { setSuccess(false); setIsSignUp(false); }} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl">Entrar Agora</button>
+          <button onClick={() => { setSuccess(false); setIsSignUp(false); }} className="w-full py-4 bg-brand-gradient text-white rounded-2xl font-black uppercase tracking-widest shadow-xl">Entrar Agora</button>
         </div>
       </div>
     );
@@ -64,7 +64,7 @@ export const Auth: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-mesh p-4 relative overflow-hidden">
       <div className="w-full max-w-md glass rounded-[3rem] p-8 sm:p-10 shadow-2xl relative z-10 border border-white/40 animate-fade-in overflow-y-auto max-h-[95vh] custom-scrollbar">
         <div className="flex flex-col items-center mb-8 text-center">
-          <div className="bg-gray-900 p-4 rounded-[1.5rem] shadow-xl mb-4">
+          <div className="bg-brand-gradient p-4 rounded-3xl shadow-xl shadow-primary-500/30 mb-4">
             <GraduationCap className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">LeituraPro</h1>
@@ -104,7 +104,7 @@ export const Auth: React.FC = () => {
                   <button 
                     type="button" 
                     onClick={() => setRole(UserRole.PROFESSOR)}
-                    className={`flex-1 py-3 rounded-xl border-2 font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${role === UserRole.PROFESSOR ? 'bg-primary-500 border-primary-500 text-white shadow-lg shadow-primary-500/30' : 'bg-white border-gray-100 text-gray-400'}`}
+                    className={`flex-1 py-3 rounded-xl border-2 font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${role === UserRole.PROFESSOR ? 'bg-brand-gradient border-transparent text-white shadow-lg shadow-primary-500/30' : 'bg-white border-gray-100 text-gray-400'}`}
                   >
                     <School size={14}/> Professor
                   </button>
@@ -138,7 +138,7 @@ export const Auth: React.FC = () => {
 
           {error && <div className="p-4 bg-red-50 text-red-600 text-xs font-black uppercase tracking-tight rounded-2xl flex items-center gap-2"><AlertCircle size={14}/> {error}</div>}
 
-          <button type="submit" disabled={loading} className="w-full py-5 bg-gray-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:bg-black transition-all flex items-center justify-center gap-3 active:scale-[0.98]">
+          <button type="submit" disabled={loading} className="w-full py-5 bg-brand-gradient text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:brightness-110 transition-all flex items-center justify-center gap-3 active:scale-[0.98]">
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>{isSignUp ? 'Criar Cadastro' : 'Acessar Sistema'} <ArrowRight size={18}/></>}
           </button>
         </form>

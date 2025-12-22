@@ -53,7 +53,7 @@ export const Auth: React.FC = () => {
         <div className="w-full max-w-md glass rounded-3xl p-10 shadow-2xl text-center border border-white/40 animate-fade-in">
           <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-6" />
           <h2 className="text-2xl font-black text-gray-900 mb-4 uppercase">Conta Criada!</h2>
-          <p className="text-sm text-gray-600 mb-8 font-medium">Verifique seu e-mail ou utilize o login direto se as confirmações estiverem desativadas.</p>
+          <p className="text-sm text-gray-600 mb-8 font-medium">Verifique seu e-mail institucional para confirmar seu acesso.</p>
           <button onClick={() => { setSuccess(false); setIsSignUp(false); }} className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl">Entrar Agora</button>
         </div>
       </div>
@@ -62,13 +62,29 @@ export const Auth: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-mesh p-4 relative overflow-hidden">
-      <div className="w-full max-w-md glass rounded-[3rem] p-10 shadow-2xl relative z-10 border border-white/40 animate-fade-in">
-        <div className="flex flex-col items-center mb-10 text-center">
+      <div className="w-full max-w-md glass rounded-[3rem] p-8 sm:p-10 shadow-2xl relative z-10 border border-white/40 animate-fade-in overflow-y-auto max-h-[95vh] custom-scrollbar">
+        <div className="flex flex-col items-center mb-8 text-center">
           <div className="bg-gray-900 p-4 rounded-[1.5rem] shadow-xl mb-4">
             <GraduationCap className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">LeituraPro</h1>
           <p className="text-gray-400 font-black uppercase tracking-widest text-[10px] mt-1">Gestão Pedagógica Inteligente</p>
+        </div>
+
+        {/* Tab Selector for Login/SignUp */}
+        <div className="flex bg-gray-900/5 p-1 rounded-2xl mb-8 border border-black/5">
+          <button 
+            onClick={() => setIsSignUp(false)}
+            className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${!isSignUp ? 'bg-white text-gray-900 shadow-lg' : 'text-gray-400'}`}
+          >
+            <LogIn size={14} /> Entrar
+          </button>
+          <button 
+            onClick={() => setIsSignUp(true)}
+            className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${isSignUp ? 'bg-white text-primary-600 shadow-lg' : 'text-gray-400'}`}
+          >
+            <UserPlus size={14} /> Cadastrar
+          </button>
         </div>
 
         <form onSubmit={handleAuth} className="space-y-5">
@@ -88,14 +104,14 @@ export const Auth: React.FC = () => {
                   <button 
                     type="button" 
                     onClick={() => setRole(UserRole.PROFESSOR)}
-                    className={`flex-1 py-3 rounded-xl border-2 font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${role === UserRole.PROFESSOR ? 'bg-primary-500 border-primary-500 text-white shadow-lg shadow-primary-500/30' : 'bg-white border-gray-100 text-gray-400'}`}
+                    className={`flex-1 py-3 rounded-xl border-2 font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${role === UserRole.PROFESSOR ? 'bg-primary-500 border-primary-500 text-white shadow-lg shadow-primary-500/30' : 'bg-white border-gray-100 text-gray-400'}`}
                   >
                     <School size={14}/> Professor
                   </button>
                   <button 
                     type="button" 
                     onClick={() => setRole(UserRole.COORDINATION)}
-                    className={`flex-1 py-3 rounded-xl border-2 font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${role === UserRole.COORDINATION ? 'bg-gray-900 border-gray-900 text-white shadow-lg shadow-gray-900/30' : 'bg-white border-gray-100 text-gray-400'}`}
+                    className={`flex-1 py-3 rounded-xl border-2 font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${role === UserRole.COORDINATION ? 'bg-gray-900 border-gray-900 text-white shadow-lg shadow-gray-900/30' : 'bg-white border-gray-100 text-gray-400'}`}
                   >
                     <ShieldCheck size={14}/> Coordenação
                   </button>
@@ -123,15 +139,13 @@ export const Auth: React.FC = () => {
           {error && <div className="p-4 bg-red-50 text-red-600 text-xs font-black uppercase tracking-tight rounded-2xl flex items-center gap-2"><AlertCircle size={14}/> {error}</div>}
 
           <button type="submit" disabled={loading} className="w-full py-5 bg-gray-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:bg-black transition-all flex items-center justify-center gap-3 active:scale-[0.98]">
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>{isSignUp ? 'Criar Conta' : 'Entrar no Sistema'} <ArrowRight size={18}/></>}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>{isSignUp ? 'Criar Cadastro' : 'Acessar Sistema'} <ArrowRight size={18}/></>}
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-black/5 text-center">
-          <button onClick={() => setIsSignUp(!isSignUp)} className="text-[10px] font-black uppercase tracking-widest text-primary-700 hover:text-primary-900 transition-colors">
-            {isSignUp ? 'Já tem acesso? Faça Login' : 'Novo por aqui? Solicite sua conta'}
-          </button>
-        </div>
+        <p className="mt-8 text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest">
+           {isSignUp ? 'Ao cadastrar você aceita os termos pedagógicos.' : 'Plataforma oficial de acompanhamento de leitura.'}
+        </p>
       </div>
     </div>
   );

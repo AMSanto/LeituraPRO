@@ -1,15 +1,17 @@
 
 import React from 'react';
-import { LayoutDashboard, Users, PenTool, School, GraduationCap, Sparkles, Award, LifeBuoy, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Users, PenTool, School, GraduationCap, Sparkles, Award, LifeBuoy, ShieldCheck, X } from 'lucide-react';
 import { ViewState, UserRole } from '../types';
 
 interface SidebarProps {
   currentView: ViewState;
   onNavigate: (view: ViewState) => void;
   userRole?: UserRole;
+  isMobile?: boolean;
+  onCloseMobile?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, userRole }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, userRole, isMobile, onCloseMobile }) => {
   const isCoord = userRole === UserRole.COORDINATION;
 
   const menuItems = [
@@ -24,25 +26,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate, userR
   ];
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 min-h-screen hidden md:flex flex-col shadow-sm z-10">
-      <div className="p-6 flex items-center gap-3 border-b border-gray-100">
-        <div className="bg-mesh p-2.5 rounded-xl shadow-lg">
-          <GraduationCap className="w-6 h-6 text-white" />
+    <aside className={`${isMobile ? 'fixed inset-y-0 left-0 w-72 z-50 shadow-2xl' : 'w-64 hidden md:flex'} bg-white border-r border-gray-200 min-h-screen flex flex-col shadow-sm transition-transform duration-300`}>
+      <div className="p-6 flex items-center justify-between border-b border-gray-100">
+        <div className="flex items-center gap-3">
+          <div className="bg-mesh p-2.5 rounded-xl shadow-lg">
+            <GraduationCap className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-lg font-black text-gray-900 tracking-tight leading-tight">LeituraPro</h1>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">AntMarques</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-lg font-black text-gray-900 tracking-tight leading-tight">LeituraPro</h1>
-          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">AntMarques</p>
-        </div>
+        {isMobile && (
+          <button onClick={onCloseMobile} className="p-2 hover:bg-gray-100 rounded-xl">
+            <X size={20} className="text-gray-400" />
+          </button>
+        )}
       </div>
       
-      <nav className="flex-1 p-4 space-y-2 mt-4">
+      <nav className="flex-1 p-4 space-y-2 mt-4 overflow-y-auto custom-scrollbar">
         {menuItems.filter(item => !item.hidden).map((item) => {
           const Icon = item.icon;
           const isActive = currentView === item.id;
           return (
             <button
               key={item.id}
-              onClick={() => onNavigate(item.id)}
+              onClick={() => {
+                onNavigate(item.id);
+                if (onCloseMobile) onCloseMobile();
+              }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all border-2 border-transparent ${
                 isActive 
                   ? `${item.active} font-black shadow-sm` 

@@ -11,8 +11,8 @@ import { CompetencyManager } from './components/CompetencyManager';
 import { RemedialList } from './components/RemedialList';
 import { CoordinationPanel } from './components/CoordinationPanel';
 import { Auth } from './components/Auth';
-import { ViewState, Student, Assessment, SchoolClass, Competency, RemedialRecord, UserRole, UserProfile } from './types';
-import { Menu, GraduationCap, CheckCircle, User, X, Users, School, Loader2, AlertTriangle } from 'lucide-react';
+import { ViewState, Student, Assessment, SchoolClass, UserRole, UserProfile, Competency } from './types';
+import { Menu, CheckCircle, User, X, Users, School, Loader2, AlertTriangle, Trash2, Check, ArrowRight } from 'lucide-react';
 import { supabase } from './services/supabase';
 
 const App: React.FC = () => {
@@ -25,6 +25,9 @@ const App: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   
+  // State para exclusão customizada
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
+  
   const [students, setStudents] = useState<Student[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -33,19 +36,16 @@ const App: React.FC = () => {
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
 
-  // 1. Gerenciamento de Sessão e Perfil
   useEffect(() => {
     if (!supabase) {
       setAuthLoading(false);
       return;
     }
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) fetchProfile(session.user.id);
       setAuthLoading(false);
     });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       if (event === 'SIGNED_OUT') {
@@ -55,7 +55,6 @@ const App: React.FC = () => {
         fetchProfile(session.user.id);
       }
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
@@ -68,10 +67,10 @@ const App: React.FC = () => {
     setStudents([]);
     setAssessments([]);
     setClasses([]);
+    setCompetencies([]);
     setCurrentView(ViewState.DASHBOARD);
   };
 
-  // 2. Carregamento de Dados Real
   useEffect(() => {
     if (session && supabase) {
       loadAllData();
@@ -81,22 +80,18 @@ const App: React.FC = () => {
   const loadAllData = async () => {
     setDataLoading(true);
     try {
-      const [resClasses, resStudents, resAssessments] = await Promise.all([
+      const [resClasses, resStudents, resAssessments, resComps] = await Promise.all([
         supabase!.from('classes').select('*'),
-        supabase!.from('students').select('*, remedial_history(*)'),
-        supabase!.from('assessments').select('*').order('date', { ascending: false })
+        supabase!.from('students').select('*'),
+        supabase!.from('assessments').select('*').order('date', { ascending: false }),
+        supabase!.from('competencies').select('*')
       ]);
-
       if (resClasses.data) setClasses(resClasses.data);
-      if (resStudents.data) {
-        setStudents(resStudents.data.map(s => ({
-          ...s,
-          remedialHistory: s.remedial_history // Mapeamento para camelCase se necessário
-        })));
-      }
+      if (resStudents.data) setStudents(resStudents.data);
       if (resAssessments.data) setAssessments(resAssessments.data);
+      if (resComps.data) setCompetencies(resComps.data);
     } catch (err) {
-      console.error("Erro ao carregar dados:", err);
+      console.error("Erro Supabase Load:", err);
     } finally {
       setDataLoading(false);
     }
@@ -104,15 +99,14 @@ const App: React.FC = () => {
 
   const handleSaveStatus = () => {
     setSaveStatus('saving');
-    setTimeout(() => setSaveStatus('saved'), 600);
+    setTimeout(() => setSaveStatus('saved'), 800);
     setTimeout(() => setSaveStatus('idle'), 3000);
   };
 
-  // 3. Operações de CRUD com Supabase
   const addStudent = async (ns: Omit<Student, 'id'>) => {
     handleSaveStatus();
-    const { data, error } = await supabase!.from('students').insert([ns]).select();
-    if (data) setStudents([...students, data[0]]);
+    const { data } = await supabase!.from('students').insert([ns]).select();
+    if (data) setStudents([data[0], ...students]);
   };
 
   const updateStudent = async (us: Student) => {
@@ -121,16 +115,34 @@ const App: React.FC = () => {
     if (!error) setStudents(students.map(s => s.id === us.id ? us : s));
   };
 
-  const deleteStudent = async (id: string) => {
-    if (!confirm("Excluir este aluno permanentemente?")) return;
-    const { error } = await supabase!.from('students').delete().eq('id', id);
-    if (!error) setStudents(students.filter(s => s.id !== id));
+  const executeDeleteStudent = async () => {
+    if (!studentToDelete) return;
+    handleSaveStatus();
+    const { error } = await supabase!.from('students').delete().eq('id', studentToDelete.id);
+    if (!error) {
+      setStudents(students.filter(s => s.id !== studentToDelete.id));
+      setStudentToDelete(null);
+    } else {
+      alert("Erro ao excluir: " + error.message);
+    }
   };
 
   const addClass = async (nc: Omit<SchoolClass, 'id'>) => {
     handleSaveStatus();
-    const { data, error } = await supabase!.from('classes').insert([{ ...nc, teacher_id: userProfile?.id }]).select();
-    if (data) setClasses([...classes, data[0]]);
+    const { data } = await supabase!.from('classes').insert([{ ...nc, teacher_id: userProfile?.id }]).select();
+    if (data) setClasses([data[0], ...classes]);
+  };
+
+  const updateClass = async (c: SchoolClass) => {
+    handleSaveStatus();
+    const { error } = await supabase!.from('classes').update(c).eq('id', c.id);
+    if (!error) setClasses(classes.map(cl => cl.id === c.id ? c : cl));
+  };
+
+  const deleteClass = async (id: string) => {
+    if (!confirm("Excluir esta turma?")) return;
+    const { error } = await supabase!.from('classes').delete().eq('id', id);
+    if (!error) setClasses(classes.filter(c => c.id !== id));
   };
 
   const saveAssessment = async (a: Omit<Assessment, 'id'>) => {
@@ -142,39 +154,27 @@ const App: React.FC = () => {
     }
   };
 
-  const toggleRemedial = async (studentId: string, startDate?: string, entryLevel?: string, exitLevel?: string) => {
+  const toggleRemedial = async (studentId: string, details?: any) => {
     const student = students.find(s => s.id === studentId);
     if (!student) return;
 
     handleSaveStatus();
-    const entering = !student.inRemedial;
-    const now = new Date().toISOString().split('T')[0];
+    const isEntering = !student.inRemedial;
+    const update = {
+      in_remedial: isEntering,
+      remedial_start_date: isEntering ? (details?.startDate || new Date().toISOString()) : null,
+      remedial_entry_level: isEntering ? (details?.entryLevel || student.readingLevel) : null,
+      // Adicionaríamos outros campos conforme necessário na tabela do Supabase
+    };
 
-    if (entering) {
-      const update = { inRemedial: true, remedialStartDate: startDate || now, remedialEntryLevel: entryLevel || student.readingLevel };
-      await supabase!.from('students').update(update).eq('id', studentId);
-      setStudents(students.map(s => s.id === studentId ? { ...s, ...update } : s));
-    } else {
-      const record = {
-        student_id: studentId,
-        entry_date: student.remedialStartDate,
-        entry_level: student.remedialEntryLevel,
-        exit_date: now,
-        exit_level: exitLevel || student.readingLevel,
-        duration_days: Math.ceil(Math.abs(new Date(now).getTime() - new Date(student.remedialStartDate!).getTime()) / (1000 * 60 * 60 * 24))
-      };
-      
-      await Promise.all([
-        supabase!.from('remedial_history').insert([record]),
-        supabase!.from('students').update({ 
-          inRemedial: false, 
-          remedialStartDate: null, 
-          remedialEntryLevel: null,
-          readingLevel: exitLevel || student.readingLevel 
-        }).eq('id', studentId)
-      ]);
-      
-      loadAllData(); // Recarrega para garantir sincronia do histórico
+    const { error } = await supabase!.from('students').update(update).eq('id', studentId);
+    if (!error) {
+      setStudents(students.map(s => s.id === studentId ? { 
+        ...s, 
+        inRemedial: isEntering,
+        remedialStartDate: update.remedial_start_date as any,
+        remedialEntryLevel: update.remedial_entry_level as any
+      } : s));
     }
   };
 
@@ -193,75 +193,130 @@ const App: React.FC = () => {
   if (!session) return <Auth />;
 
   return (
-    <div className="flex h-screen bg-gray-50 font-sans text-gray-900 overflow-hidden">
-      {mobileMenuOpen && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden" onClick={() => setMobileMenuOpen(false)} />}
-      <Sidebar currentView={currentView} onNavigate={(v) => { setCurrentView(v); setMobileMenuOpen(false); }} userRole={userProfile?.role} />
+    <div className="flex h-screen bg-gray-50 font-sans text-gray-900 overflow-hidden relative w-full">
+      {/* Backdrop Mobile */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[100] md:hidden" onClick={() => setMobileMenuOpen(false)} />
+      )}
       
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="bg-white border-b border-gray-100 p-4 flex items-center justify-between shrink-0 z-30 shadow-sm px-8">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setMobileMenuOpen(true)} className="p-2 md:hidden hover:bg-gray-100 rounded-xl"><Menu /></button>
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2 px-4 py-2 bg-purple-50 rounded-2xl border border-purple-100">
-                <Users size={16} className="text-purple-600" />
-                <span className="text-[10px] font-black text-purple-700 uppercase tracking-widest">ALUNOS: <span className="text-gray-900 text-sm ml-1">{students.length}</span></span>
-              </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-2xl border border-emerald-100">
-                <School size={16} className="text-emerald-600" />
-                <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">TURMAS: <span className="text-gray-900 text-sm ml-1">{classes.length}</span></span>
+      {/* Sidebar Navigation */}
+      <div className={`
+        fixed inset-y-0 left-0 z-[110] transform transition-transform duration-300 md:relative md:translate-x-0 w-72 md:w-64 shrink-0
+        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:block'}
+      `}>
+        <Sidebar 
+          currentView={currentView} 
+          onNavigate={(v) => { setCurrentView(v); setMobileMenuOpen(false); }} 
+          userRole={userProfile?.role}
+          isMobile={true}
+          onCloseMobile={() => setMobileMenuOpen(false)}
+        />
+      </div>
+      
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
+        <header className="bg-white border-b border-gray-100 p-3 md:p-4 flex items-center justify-between shrink-0 z-30 shadow-sm px-4 md:px-8">
+          <div className="flex items-center gap-2 md:gap-4">
+            <button onClick={() => setMobileMenuOpen(true)} className="p-2 md:hidden hover:bg-gray-100 rounded-xl transition-colors"><Menu size={24} /></button>
+            <div className="hidden sm:flex items-center gap-4">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-50 rounded-2xl border border-primary-100">
+                <Users size={14} className="text-primary-600" />
+                <span className="text-[10px] font-black text-primary-700 uppercase tracking-widest">Alunos: {students.length}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            {dataLoading && <Loader2 size={16} className="animate-spin text-primary-500" />}
+          <div className="flex items-center gap-2 md:gap-4">
+            {dataLoading && <Loader2 size={16} className="animate-spin text-primary-400" />}
             {saveStatus !== 'idle' && (
-              <div className="text-[10px] font-black px-4 py-2 rounded-full bg-green-50 text-green-600 flex items-center gap-2 animate-fade-in tracking-[0.2em] uppercase border border-green-100">
-                <CheckCircle size={12}/> {saveStatus === 'saving' ? 'SINCRONIZANDO' : 'SINC. OK'}
+              <div className={`text-[10px] font-black px-3 py-1.5 rounded-full flex items-center gap-1.5 border transition-all ${
+                saveStatus === 'saving' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-green-50 text-green-600 border-green-100'
+              }`}>
+                {saveStatus === 'saving' ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12}/>}
+                <span className="hidden xs:inline uppercase tracking-widest">{saveStatus === 'saving' ? 'PROCESSANDO...' : 'SALVO'}</span>
               </div>
             )}
             
-            <button onClick={() => setShowProfileModal(true)} className="flex items-center gap-4 pl-6 py-1 hover:bg-gray-50 rounded-[2rem] transition-all group border-l-2 border-gray-100">
+            <button onClick={() => setShowProfileModal(true)} className="flex items-center gap-3 pl-4 py-1 hover:bg-gray-50 rounded-[2rem] transition-all border-l-2 border-gray-100 ml-2 focus:outline-none">
               <div className="text-right hidden sm:block">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{userProfile?.role === UserRole.COORDINATION ? 'Coordenação' : 'Professor'}</p>
-                <p className="text-sm font-black text-gray-900 leading-tight group-hover:text-primary-600 transition-colors uppercase">{userProfile?.name}</p>
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 leading-none">{userProfile?.role}</p>
+                <p className="text-xs font-black text-gray-900 leading-none uppercase truncate max-w-[120px]">{userProfile?.name}</p>
               </div>
-              <div className="bg-gray-900 p-2.5 rounded-2xl group-hover:bg-primary-500 transition-all shadow-lg">
-                <User size={20} className="text-white" />
+              <div className="bg-gray-900 p-2.5 rounded-2xl shadow-lg border border-gray-800">
+                <User size={18} className="text-white" />
               </div>
             </button>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar">
-          <div className="max-w-7xl mx-auto">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 custom-scrollbar w-full relative">
+          <div className="max-w-7xl mx-auto w-full">
             {currentView === ViewState.DASHBOARD && <Dashboard students={students} assessments={assessments} classes={classes} />}
             {currentView === ViewState.COORDINATION_PANEL && <CoordinationPanel assessments={assessments} students={students} classes={classes} />}
-            {currentView === ViewState.CLASSES && <ClassList classes={classes} students={students} onAddClass={addClass} onUpdateClass={async (c) => { await supabase!.from('classes').update(c).eq('id', c.id); setClasses(classes.map(cl => cl.id === c.id ? c : cl)); }} onDeleteClass={async (id) => { if(confirm("Excluir turma?")) { await supabase!.from('classes').delete().eq('id', id); setClasses(classes.filter(c => c.id !== id)); } }} onViewStudents={(id) => { setSelectedClassId(id); setCurrentView(ViewState.STUDENTS); }} />}
-            {currentView === ViewState.STUDENTS && <StudentList students={students} classes={classes} assessments={assessments} onAddStudent={addStudent} onUpdateStudent={updateStudent} onDeleteStudent={deleteStudent} onViewHistory={(id) => { setSelectedStudentId(id); setCurrentView(ViewState.STUDENT_HISTORY); }} onToggleRemedial={toggleRemedial} initialClassId={selectedClassId} />}
-            {currentView === ViewState.REMEDIAL && <RemedialList students={students} classes={classes} onToggleRemedial={toggleRemedial} onViewStudent={(id) => { setSelectedStudentId(id); setCurrentView(ViewState.STUDENT_HISTORY); }} />}
+            {currentView === ViewState.CLASSES && <ClassList classes={classes} students={students} onAddClass={addClass} onUpdateClass={updateClass} onDeleteClass={deleteClass} onViewStudents={(id) => { setSelectedClassId(id); setCurrentView(ViewState.STUDENTS); }} />}
+            {currentView === ViewState.STUDENTS && <StudentList students={students} classes={classes} assessments={assessments} onAddStudent={addStudent} onUpdateStudent={updateStudent} onDeleteStudent={(id) => setStudentToDelete(students.find(s => s.id === id) || null)} onViewHistory={(id) => { setSelectedStudentId(id); setCurrentView(ViewState.STUDENT_HISTORY); }} onToggleRemedial={(id) => toggleRemedial(id)} initialClassId={selectedClassId} />}
             {currentView === ViewState.STUDENT_HISTORY && students.find(s => s.id === selectedStudentId) && <StudentHistory student={students.find(s => s.id === selectedStudentId)!} assessments={assessments.filter(a => a.studentId === selectedStudentId)} onBack={() => setCurrentView(ViewState.STUDENTS)} />}
             {currentView === ViewState.ASSESSMENT && <AssessmentForm students={students} classes={classes} onSave={saveAssessment} onCancel={() => setCurrentView(ViewState.DASHBOARD)} />}
             {currentView === ViewState.GENERATOR && <TextGenerator />}
+            {currentView === ViewState.REMEDIAL && <RemedialList students={students} classes={classes} onToggleRemedial={toggleRemedial} onViewStudent={(id) => { setSelectedStudentId(id); setCurrentView(ViewState.STUDENT_HISTORY); }} />}
+            {currentView === ViewState.COMPETENCIES && <CompetencyManager competencies={competencies} onAdd={(c) => {}} onUpdate={(c) => {}} onDelete={(id) => {}} />}
           </div>
         </div>
       </main>
 
+      {/* Profile Modal */}
       {showProfileModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[120] flex items-center justify-center p-4">
-          <div className="bg-white rounded-[3rem] w-full max-w-sm p-12 shadow-2xl animate-fade-in ring-1 ring-black/5">
-            <div className="flex justify-between items-center mb-10">
-              <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">MEU PERFIL</h2>
-              <button onClick={() => setShowProfileModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X/></button>
+        <div className="fixed inset-0 bg-gray-900/70 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-sm p-8 shadow-2xl animate-fade-in ring-1 ring-black/5 overflow-hidden">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-xl font-black text-gray-900 tracking-tight uppercase">Minha Conta</h2>
+              <button onClick={() => setShowProfileModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors focus:outline-none"><X size={20}/></button>
             </div>
-            <div className="space-y-8">
-              <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">E-mail</p>
-                <p className="font-bold text-xs text-gray-600 mb-4">{userProfile?.email}</p>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Nível de Acesso</p>
-                <p className="font-black text-sm text-gray-900 flex items-center gap-2 uppercase">{userProfile?.role}</p>
+            <div className="space-y-6">
+              <div className="bg-gray-50 p-6 rounded-3xl border border-gray-100 shadow-inner">
+                <div className="mb-4">
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">E-mail</p>
+                  <p className="font-bold text-xs text-gray-700 truncate">{userProfile?.email}</p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Perfil</p>
+                  <p className="font-black text-sm text-primary-600 uppercase">{userProfile?.role}</p>
+                </div>
               </div>
-              <button onClick={handleSignOut} className="w-full py-5 bg-red-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-red-700 transition-all shadow-2xl">ENCERRAR SESSÃO</button>
+              <button onClick={handleSignOut} className="w-full py-5 bg-red-600 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] hover:bg-red-700 transition-all shadow-xl active:scale-95">ENCERRAR SESSÃO</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO (STYLE FOCUSED) */}
+      {studentToDelete && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-xl animate-fade-in" onClick={() => setStudentToDelete(null)} />
+          <div className="bg-white rounded-[2.5rem] w-full max-w-md shadow-2xl relative z-10 animate-fade-in flex flex-col overflow-hidden ring-1 ring-black/5">
+            <div className="p-8 bg-purple-600 text-white flex justify-between items-center relative">
+              <div>
+                <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter leading-none">Confirmar Exclusão</h2>
+                <p className="text-[10px] font-bold uppercase tracking-widest mt-2 opacity-80">Ação irreversível de sistema</p>
+              </div>
+              <button onClick={() => setStudentToDelete(null)} className="p-3 hover:bg-white/20 rounded-full transition-all text-white"><X size={24} /></button>
+            </div>
+            <div className="p-8 space-y-8">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-20 h-20 bg-red-50 rounded-[2rem] flex items-center justify-center text-red-500 ring-4 ring-red-50/50">
+                  <AlertTriangle size={40} />
+                </div>
+                <div className="text-center">
+                  <p className="text-gray-500 text-sm font-medium">Você está prestes a remover o registro de:</p>
+                  <p className="text-lg font-black text-gray-900 uppercase mt-1 tracking-tight">{studentToDelete.name}</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <button onClick={() => setStudentToDelete(null)} className="flex-1 py-4 font-black text-gray-400 text-[11px] uppercase tracking-[0.2em] hover:text-gray-600">CANCELAR</button>
+                <button onClick={executeDeleteStudent} className="flex-1 py-4 bg-purple-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] shadow-xl hover:bg-purple-700 transition-all active:scale-95 flex items-center justify-center gap-2">
+                  <Check size={16} /> CONFIRMAR
+                </button>
+              </div>
             </div>
           </div>
         </div>

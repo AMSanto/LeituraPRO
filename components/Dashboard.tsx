@@ -1,7 +1,8 @@
+
 import React, { useMemo, useState } from 'react';
 import { Student, Assessment, SchoolClass } from '../types';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { TrendingUp, Users, CheckCircle, Clock, Filter, Search, School } from 'lucide-react';
+import { TrendingUp, Users, CheckCircle, Clock, Search, School } from 'lucide-react';
 
 interface DashboardProps {
   students: Student[];
@@ -13,8 +14,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, assessments, cla
   const [selectedClassId, setSelectedClassId] = useState<string>('all');
   const [searchStudent, setSearchStudent] = useState<string>('');
 
-  // 1. Filtrar Estudantes
-  // Otimização: Apenas recalcula se alunos, filtro de turma ou busca mudarem.
   const filteredStudents = useMemo(() => {
     const searchLower = searchStudent.toLowerCase();
     return students.filter(student => {
@@ -24,27 +23,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, assessments, cla
     });
   }, [students, selectedClassId, searchStudent]);
 
-  // 2. Filtrar Avaliações (apenas dos estudantes filtrados)
-  // Otimização: Cria um Set para lookup O(1) dos IDs dos alunos.
   const filteredAssessments = useMemo(() => {
     const studentIds = new Set(filteredStudents.map(s => s.id));
     return assessments.filter(a => studentIds.has(a.studentId));
   }, [assessments, filteredStudents]);
 
-  // Calculate stats based on FILTERED data
   const stats = useMemo(() => {
     const totalStudents = filteredStudents.length;
     const totalAssessments = filteredAssessments.length;
-    
-    if (totalAssessments === 0) {
-      return { totalStudents, totalAssessments, avgWPM: 0, avgAccuracy: 0 };
-    }
-
+    if (totalAssessments === 0) return { totalStudents, totalAssessments, avgWPM: 0, avgAccuracy: 0 };
     const totals = filteredAssessments.reduce((acc, curr) => ({
       wpm: acc.wpm + curr.wpm,
       accuracy: acc.accuracy + curr.accuracy
     }), { wpm: 0, accuracy: 0 });
-
     return { 
       totalStudents, 
       totalAssessments, 
@@ -53,62 +44,49 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, assessments, cla
     };
   }, [filteredStudents.length, filteredAssessments]);
 
-  // Chart Data
-  // Otimização: Agrupa por data crua (ISO) primeiro, ordena as chaves (strings ISO ordenam corretamente),
-  // e só depois formata para exibição. Evita parsing repetitivo de datas dentro do sort.
   const chartData = useMemo(() => {
     const grouped = filteredAssessments.reduce((acc, curr) => {
-      const dateKey = curr.date; // Esperado YYYY-MM-DD
-      if (!acc[dateKey]) {
-        acc[dateKey] = { wpmSum: 0, count: 0 };
-      }
+      const dateKey = curr.date;
+      if (!acc[dateKey]) acc[dateKey] = { wpmSum: 0, count: 0 };
       acc[dateKey].wpmSum += curr.wpm;
       acc[dateKey].count += 1;
       return acc;
     }, {} as Record<string, { wpmSum: number, count: number }>);
 
-    return Object.keys(grouped)
-      .sort() // Ordenação lexicográfica de YYYY-MM-DD funciona cronologicamente
-      .map(dateKey => {
-        const item = grouped[dateKey];
-        // Conversão segura de data para exibição
-        const [year, month, day] = dateKey.split('-').map(Number);
-        const dateObj = new Date(year, month - 1, day);
-        
-        return {
-          date: dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-          avgWPM: Math.round(item.wpmSum / item.count)
-        };
-      });
+    return Object.keys(grouped).sort().map(dateKey => {
+      const item = grouped[dateKey];
+      const [year, month, day] = dateKey.split('-').map(Number);
+      const dateObj = new Date(year, month - 1, day);
+      return {
+        date: dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        avgWPM: Math.round(item.wpmSum / item.count)
+      };
+    });
   }, [filteredAssessments]);
 
-  // Level Distribution
   const levelData = useMemo(() => {
     const counts = filteredStudents.reduce((acc, curr) => {
       acc[curr.readingLevel] = (acc[curr.readingLevel] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-    
     return Object.keys(counts).map(key => ({ name: key, count: counts[key] }));
   }, [filteredStudents]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header and Filter Bar */}
-      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+    <div className="space-y-6 animate-fade-in w-full">
+      <div className="bg-white p-4 md:p-6 rounded-3xl border border-gray-100 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-500 text-sm">Visão geral do desempenho de leitura</p>
+          <h1 className="text-xl md:text-2xl font-black text-gray-900 uppercase tracking-tight">Dashboard</h1>
+          <p className="text-gray-500 text-xs md:text-sm font-medium">Visão pedagógica em tempo real</p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          {/* Class Filter */}
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+          <div className="relative flex-1">
             <School className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
             <select
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
-              className="w-full sm:w-48 pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full sm:w-48 pl-10 pr-4 py-3 bg-gray-50 border-none ring-1 ring-gray-100 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-primary-500 outline-none appearance-none"
             >
               <option value="all">Todas as Turmas</option>
               {classes.map(cls => (
@@ -117,114 +95,71 @@ export const Dashboard: React.FC<DashboardProps> = ({ students, assessments, cla
             </select>
           </div>
 
-          {/* Student Search */}
-          <div className="relative">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
               placeholder="Buscar aluno..."
               value={searchStudent}
               onChange={(e) => setSearchStudent(e.target.value)}
-              className="w-full sm:w-64 pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+              className="w-full sm:w-64 pl-10 pr-4 py-3 bg-gray-50 border-none ring-1 ring-gray-100 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-primary-500 outline-none"
             />
           </div>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard 
-          title="Alunos Filtrados" 
-          value={stats.totalStudents.toString()} 
-          icon={Users} 
-          color="bg-blue-500" 
-        />
-        <StatCard 
-          title="Média Palavras/Min" 
-          value={stats.avgWPM.toString()} 
-          subtitle="Filtrado"
-          icon={Clock} 
-          color="bg-green-500" 
-        />
-        <StatCard 
-          title="Precisão Média" 
-          value={`${stats.avgAccuracy}%`} 
-          icon={CheckCircle} 
-          color="bg-indigo-500" 
-        />
-        <StatCard 
-          title="Avaliações" 
-          value={stats.totalAssessments.toString()} 
-          icon={TrendingUp} 
-          color="bg-purple-500" 
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard title="Total Alunos" value={stats.totalStudents} icon={Users} color="text-blue-500" bg="bg-blue-50" />
+        <StatCard title="Média WPM" value={stats.avgWPM} icon={Clock} color="text-emerald-500" bg="bg-emerald-50" />
+        <StatCard title="Precisão" value={`${stats.avgAccuracy}%`} icon={CheckCircle} color="text-indigo-500" bg="bg-indigo-50" />
+        <StatCard title="Avaliados" value={stats.totalAssessments} icon={TrendingUp} color="text-purple-500" bg="bg-purple-50" />
       </div>
 
-      {filteredStudents.length === 0 ? (
-         <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-           <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-           <p className="text-gray-500">Nenhum aluno encontrado com os filtros atuais.</p>
-         </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Chart */}
-          <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-800 mb-6">Evolução de Fluência</h3>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="avgWPM" 
-                    name="Palavras por Minuto" 
-                    stroke="#3b82f6" 
-                    strokeWidth={3} 
-                    dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} 
-                    activeDot={{ r: 6 }} 
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Distribution Chart */}
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-800 mb-6">Níveis de Leitura</h3>
-            <div className="h-72">
-               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={levelData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                  <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" width={100} axisLine={false} tickLine={false} tick={{fill: '#4b5563', fontSize: 13, fontWeight: 500}} />
-                  <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ borderRadius: '8px' }} />
-                  <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={32} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-white p-6 md:p-8 rounded-[2rem] border border-gray-100 shadow-sm min-h-[350px]">
+          <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-8">Curva de Fluência (WPM Médio)</h3>
+          <div className="h-64 md:h-80 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10}} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 10}} />
+                <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                <Line type="monotone" dataKey="avgWPM" stroke="#3b82f6" strokeWidth={4} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6, strokeWidth: 0 }} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
-      )}
+
+        <div className="bg-white p-6 md:p-8 rounded-[2rem] border border-gray-100 shadow-sm min-h-[350px]">
+          <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-8">Distribuição de Nível</h3>
+          <div className="h-64 md:h-80 w-full">
+             <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={levelData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" width={80} axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10, fontWeight: 'bold'}} />
+                <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ borderRadius: '12px' }} />
+                <Bar dataKey="count" fill="#8b5cf6" radius={[0, 8, 8, 0]} barSize={20} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
-const StatCard: React.FC<{ title: string; value: string; subtitle?: string; icon: any; color: string }> = ({ 
-  title, value, subtitle, icon: Icon, color 
+const StatCard: React.FC<{ title: string; value: number | string; icon: any; color: string; bg: string }> = ({ 
+  title, value, icon: Icon, color, bg 
 }) => (
-  <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-start justify-between">
+  <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between transition-transform hover:scale-[1.02]">
     <div>
-      <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-      <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
-      {subtitle && <p className="text-xs text-green-600 mt-1 font-medium">{subtitle}</p>}
+      <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1 leading-none">{title}</p>
+      <h3 className="text-xl md:text-2xl font-black text-gray-900 leading-none">{value}</h3>
     </div>
-    <div className={`p-3 rounded-lg ${color} bg-opacity-10`}>
-      <Icon className={`w-6 h-6 ${color.replace('bg-', 'text-')}`} />
+    <div className={`p-3 rounded-2xl ${bg} ${color} shadow-sm`}>
+      <Icon className="w-5 h-5 md:w-6 md:h-6" />
     </div>
   </div>
 );

@@ -188,13 +188,15 @@ const App: React.FC = () => {
   // Funções para Gerenciamento de Competências (Critérios)
   const addCompetency = async (nc: Omit<Competency, 'id'>) => {
     handleSaveStatus();
+    // CORREÇÃO: Usando 'teacherId' para manter o padrão das outras tabelas
     const { data, error } = await supabase!.from('competencies').insert([{ 
       ...nc, 
-      userId: userProfile?.id 
+      teacherId: userProfile?.id 
     }]).select();
 
     if (error) {
       alert("Erro ao salvar critério: " + error.message);
+      console.error("Supabase Error (addCompetency):", error);
       return;
     }
     if (data) setCompetencies([...competencies, data[0]]);
